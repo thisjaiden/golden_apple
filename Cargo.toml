@@ -1,0 +1,9 @@
+[package]
+name = "golden_apple"
+version = "1.17.0-alpha-1"
+authors = ["pizzajess <thisjaiden@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
