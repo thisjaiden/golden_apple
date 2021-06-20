@@ -1,6 +1,6 @@
 //! # Overview
 //! `golden_apple` is a library for decoding, encoding, and using common types found in Minecraft:
-//! Java Edition's code.
+//! Java Edition.
 //!
 //! # Goals
 //! - Provide a generalized format for sharing and using Minecraft's data types
