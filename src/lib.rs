@@ -159,7 +159,7 @@ impl VarInt {
         panic!("golden_apple::VarInt::to_writer reached end of function, which should not be possible");
     } 
     /// Converts a VarInt to a series of bytes.
-    pub fn to_bytes(&mut self) -> Result<Vec<u8>, Error> {
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
         let msb: u8 = 0b10000000;
         let mask: i32 = 0b01111111;
@@ -191,6 +191,160 @@ impl VarInt {
         Ok(VarInt { value, length: 0 }.to_bytes()?.len() as u8)
     }
 }
+
+
+/// Represents a Java Long (i64) using between 1-10 bytes.
+#[derive(Eq, Clone, Copy, Debug)]
+pub struct VarLong {
+    value: i64,
+    length: u8
+}
+
+impl std::fmt::Display for VarLong {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "VarLong {{ {:?} }}", self.value)
+    }
+}
+
+impl PartialEq for VarLong {
+    fn eq(&self, other: &Self) -> bool {
+        if self.value == other.value {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+impl VarLong {
+    /// Returns the value of a given VarInt
+    pub fn value(self) -> i64 {
+        return self.value;
+    }
+    /// Creates a VarLong from a series of bytes. Returns the value and the amount of bytes used if
+    /// creation is successful.
+    pub fn from_bytes(data: &[u8]) -> Result<(VarInt, usize), Error> {
+        let mut iterator = data.iter();
+        let mut result = 0;
+
+        let msb: u8 = 0b10000000;
+        let mask: u8 = !msb;
+
+        for i in 0..10 {
+            let read;
+            match iterator.next() {
+                Some(val) => {
+                    read = val;
+                }
+                None => {
+                    return Err(Error::MissingData);
+                }
+            }
+
+            result |= ((read & mask) as i32) << (7 * i);
+
+            // The 10th byte is only allowed to have the 4 smallest bits set
+            if i == 9 && (read & 0xf0 != 0) {
+                return Err(Error::VarIntTooLong);
+            }
+
+            if (read & msb) == 0 {
+                return Ok((VarInt {value: result, length: i}, i as usize));
+            }
+        }
+        // This will never occur.
+        panic!("golden_apple::VarLong::from_bytes reached end of function, which should not be possible");
+    }
+    /// Creates a VarLong from a reader containing bytes.
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<VarInt, Error> {
+        let mut result = 0;
+
+        let msb: u8 = 0b10000000;
+        let mask: u8 = !msb;
+    
+        for i in 0..10 {
+            let read = read_byte(reader)?;
+    
+            result |= ((read & mask) as i32) << (7 * i);
+    
+            // The 10th byte is only allowed to have the 4 smallest bits set
+            if i == 9 && (read & 0xf0 != 0) {
+                return Err(Error::VarIntTooLong);
+            }
+    
+            if (read & msb) == 0 {
+                return Ok(VarInt {value: result, length: i});
+            }
+        }
+        // This will never occur.
+        panic!("golden_apple::VarLong::from_reader reached end of function, which should not be possible");
+    }
+    /// Writes a VarLong to a writer as a series of bytes.
+    pub fn to_writer<W: std::io::Write>(&mut self, writer: &mut W) -> Result<(), Error> {
+        let msb: u8 = 0b10000000;
+        let mask: i64 = 0b01111111;
+        let mut val = self.value;
+
+        for _ in 0..5 {
+            let tmp = (val & mask) as u8;
+            val &= !mask;
+            val = val.rotate_right(7);
+
+            if val != 0 {
+                match writer.write_all(&[tmp | msb]) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        return Err(Error::WriterError(e));
+                    }
+                }
+            } else {
+                match writer.write_all(&[tmp]) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        return Err(Error::WriterError(e));
+                    }
+                }
+                return Ok(());
+            }
+        }
+        // This will never occur.
+        panic!("golden_apple::VarInt::to_writer reached end of function, which should not be possible");
+    } 
+    /// Converts a VarLong to a series of bytes.
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        let mut bytes = vec![];
+        let msb: u8 = 0b10000000;
+        let mask: i64 = 0b01111111;
+        let mut val = self.value;
+
+        for _ in 0..5 {
+            let tmp = (val & mask) as u8;
+            val &= !mask;
+            val = val.rotate_right(7);
+
+            if val != 0 {
+                bytes.push(tmp | msb);
+            } else {
+                bytes.push(tmp);
+                return Ok(bytes);
+            }
+        }
+        // This will never occur.
+        panic!("golden_apple::VarInt::to_bytes reached end of function, which should not be possible");
+    }
+    /// Creates a VarLong from a given value.
+    pub fn from_value(value: i64) -> Result<VarLong, Error> {
+        Ok(VarLong {
+            value,
+            length: VarLong::get_len_from_value(value)?
+        })
+    }
+    fn get_len_from_value(value: i64) -> Result<u8, Error> {
+        Ok(VarLong { value, length: 0 }.to_bytes()?.len() as u8)
+    }
+}
+
 
 
 pub mod generalized {
@@ -265,5 +419,40 @@ fn read_byte<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
         Err(e) => {
             return Err(Error::ReaderError(e));
         }
+    }
+}
+
+mod test {
+    use super::*;
+    #[test]
+    fn varint_standard_values() -> Result<(), Error> {
+        // Create the list of standard values
+        let val_0 = VarInt::from_value(0)?;
+        let val_1 = VarInt::from_value(1)?;
+        let val_largest_num = VarInt::from_value(2147483647)?;
+        let val_minus_one = VarInt::from_value(-1)?;
+        let val_smallest_num = VarInt::from_value(-2147483648)?;
+
+        // Check that the values are still the same
+        assert_eq!(val_0.value(), 0);
+        assert_eq!(val_1.value(), 1);
+        assert_eq!(val_largest_num.value(), 2147483647);
+        assert_eq!(val_minus_one.value(), -1);
+        assert_eq!(val_smallest_num.value(), -2147483648);
+
+        // Check that encoding works properly
+        assert_eq!(val_0.to_bytes()?, [0x00]);
+        assert_eq!(val_1.to_bytes()?, [0x01]);
+        assert_eq!(val_largest_num.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0x07]);
+        assert_eq!(val_minus_one.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0x0f]);
+        assert_eq!(val_smallest_num.to_bytes()?, [0x80, 0x80, 0x80, 0x80, 0x08]);
+
+        // Check that decoding works properly
+        assert_eq!(val_0.value(), VarInt::from_bytes(&[0x00])?.0.value());
+        assert_eq!(val_1.value(), VarInt::from_bytes(&[0x01])?.0.value());
+        assert_eq!(val_largest_num.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x07])?.0.value());
+        assert_eq!(val_minus_one.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x0f])?.0.value());
+        assert_eq!(val_smallest_num.value(), VarInt::from_bytes(&[0x80, 0x80, 0x80, 0x80, 0x08])?.0.value());
+        return Ok(());
     }
 }
