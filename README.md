@@ -19,7 +19,7 @@ This crate is in an early stage. Many features aren't yet present. Here's an ove
 - [ ] Identifier  
   Pretty much just a String, not sure if this should be included
 - [X] VarInt
-- [ ] VarLong
+- [X] VarLong
 - [ ] Metadata
 - [ ] Slot
 - [ ] NBT
