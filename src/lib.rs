@@ -318,7 +318,7 @@ impl VarLong {
         let mask: i64 = 0b01111111;
         let mut val = self.value;
 
-        for _ in 0..5 {
+        for _ in 0..10 {
             let tmp = (val & mask) as u8;
             val &= !mask;
             val = val.rotate_right(7);
@@ -331,7 +331,7 @@ impl VarLong {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::to_bytes reached end of function, which should not be possible");
+        panic!("golden_apple::VarLong::to_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarLong from a given value.
     pub fn from_value(value: i64) -> Result<VarLong, Error> {
@@ -453,6 +453,30 @@ mod test {
         assert_eq!(val_largest_num.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x07])?.0.value());
         assert_eq!(val_minus_one.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x0f])?.0.value());
         assert_eq!(val_smallest_num.value(), VarInt::from_bytes(&[0x80, 0x80, 0x80, 0x80, 0x08])?.0.value());
+        return Ok(());
+    }
+    #[test]
+    fn varlong_standard_values() -> Result<(), Error> {
+        // Create the list of standard values
+        let val_0 = VarLong::from_value(0)?;
+        let val_1 = VarLong::from_value(1)?;
+        let val_largest_num = VarLong::from_value(9223372036854775807)?;
+        let val_minus_one = VarLong::from_value(-1)?;
+        let val_smallest_num = VarLong::from_value(-9223372036854775808)?;
+
+        // Check that the values are still the same
+        assert_eq!(val_0.value(), 0);
+        assert_eq!(val_1.value(), 1);
+        assert_eq!(val_largest_num.value(), 9223372036854775807);
+        assert_eq!(val_minus_one.value(), -1);
+        assert_eq!(val_smallest_num.value(), -9223372036854775808);
+
+        // Check that encoding works properly
+        assert_eq!(val_0.to_bytes()?, [0x00]);
+        assert_eq!(val_1.to_bytes()?, [0x01]);
+        assert_eq!(val_largest_num.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
+        assert_eq!(val_minus_one.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01]);
+        assert_eq!(val_smallest_num.to_bytes()?, [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01]);
         return Ok(());
     }
 }
