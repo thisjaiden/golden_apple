@@ -13,8 +13,7 @@ Types that can be fully represented in Rust have encoders/decoders under `golden
 This crate is in an early stage. Many features aren't yet present. Here's an overview of what is and isn't done:
 
 - [X] Boolean
-- [ ] String  
-  Decoding done, encoding WIP
+- [X] String  
 - [ ] Chat
 - [ ] Identifier  
   Pretty much just a String, not sure if this should be included
@@ -23,7 +22,8 @@ This crate is in an early stage. Many features aren't yet present. Here's an ove
 - [ ] Metadata
 - [ ] Slot
 - [ ] NBT
-- [ ] Position
+- [X] Position
+  Writing negative positions may not work yet
 - [ ] Angle
 - [ ] UUID
 - [ ] Enums  

@@ -345,11 +345,129 @@ impl VarLong {
     }
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+/// Represents a position in the Minecraft world. Not the floating point values used for player
+/// movement, but the whole number values used for things like block positions.
+pub struct Position {
+    // 26 bits for x and z, rounds up to 32
+    // 12 for y rounds up to 16
+    x: i32,
+    y: i16,
+    z: i32
+}
+
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Position {{ {}, {}, {} }}", self.x, self.y, self.z)
+    }
+}
+
+impl Position {
+    /// Returns the x coordinate of this Position.
+    pub fn get_x(self) -> i32 {
+        return self.x;
+    }
+    /// Returns the y coordinate of this Position.
+    pub fn get_y(self) -> i16 {
+        return self.y;
+    }
+    /// Returns the z coordinate of this Position.
+    pub fn get_z(self) -> i32 {
+        return self.z
+    }
+    /// Creates a Position from a series of bytes. Requires 8 bytes or more in the buffer. Also
+    /// returns how many bytes were used in this function, which should always be 8.
+    pub fn from_bytes(data: &[u8]) -> Result<(Position, usize), Error> {
+        if data.len() < 8 {
+            return Err(Error::MissingData);
+        }
+
+        let mut toconvert = [0; 8];
+        let indexable_data = data.split_at(8).0;
+        for i in 0..8 {
+            toconvert[i] = indexable_data[i]
+        }
+        // convert to one big u64
+        let u64val = u64::from_be_bytes(toconvert);
+
+        // strip out values with bitmasks
+        let mut x = (u64val >> 38) as i32;
+        let mut y = (u64val & 0xfff) as i16;
+        let mut z = (u64val << 26 >> 38) as i32;
+
+        // convert to negative if appropriate
+        if x >= 2^25 {
+            x -= 2^26;
+        }
+        if y >= 2^11 {
+            y -= 2^12;
+        }
+        if z >= 2^25 {
+            z -= 2^26
+        }
+        return Ok((Position { x, y, z }, 8));
+    }
+    /// Creates a Position from a Read type.
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Position, Error> {
+        let mut toconvert = [0; 8];
+        for i in 0..8 {
+            toconvert[i] = read_byte(reader)?;
+        }
+        let u64val = u64::from_be_bytes(toconvert);
+
+        // strip out values with bitmasks
+        let mut x = (u64val >> 38) as i32;
+        let mut y = (u64val & 0xfff) as i16;
+        let mut z = (u64val << 26 >> 38) as i32;
+
+        // convert to negative if appropriate
+        if x >= 2^25 {
+            x -= 2^26;
+        }
+        if y >= 2^11 {
+            y -= 2^12;
+        }
+        if z >= 2^25 {
+            z -= 2^26
+        }
+        return Ok(Position { x, y, z });
+    }
+    /// Creates a Position from coordinate values.
+    pub fn from_values(x: i32, y: i16, z: i32) -> Position {
+        Position {
+            x, y, z
+        }
+    }
+    /// Converts a Position into a series of bytes.
+    /// WARNING: THIS FUNCTION HAS NOT BEEN VERIFIED TO WORK WITH NEGATIVE POSITIONS PROPERLY
+    pub fn to_bytes(&mut self) -> Result<Vec<u8>, Error> {
+        // This is some magic voodo from wiki.vg. No gaurentee it works, especially with the typecasts on negatives.
+        let u64val: u64 = ((self.x as u64 & 0x3FFFFFF) << 38) | ((self.z as u64 & 0x3FFFFFF) << 12) | (self.y as u64 & 0xFFF);
+        let u64bytes = u64val.to_be_bytes();
+        return Ok(u64bytes.to_vec());
+    }
+    /// Writes a Position to a Write type.
+    /// WARNING: THIS FUNCTION HAS NOT BEEN VERIFIED TO WORK WITH NEGATIVE POSITIONS PROPERLY
+    pub fn to_writer<W: std::io::Write>(&mut self, writer: &mut W) -> Result<(), Error> {
+        // This is some magic voodo from wiki.vg. No gaurentee it works, especially with the typecasts on negatives.
+        let u64val: u64 = ((self.x as u64 & 0x3FFFFFF) << 38) | ((self.z as u64 & 0x3FFFFFF) << 12) | (self.y as u64 & 0xFFF);
+        let u64bytes = u64val.to_be_bytes();
+        match writer.write_all(&u64bytes) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+}
 
 
 pub mod generalized {
     use super::Error;
     use super::read_byte;
+    use super::VarInt;
 
     /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
     /// VarInt length prefix, and does not verify that the text is utf8.
@@ -382,6 +500,34 @@ pub mod generalized {
             return Ok((String::from_utf8_unchecked(text), string_len.0.value() as usize + string_len.1));
         }
     }
+    /// Writes a `String` to a Write interface.
+    pub fn string_to_writer<W: std::io::Write>(writer: &mut W, data: String) -> Result<(), Error> {
+        let as_bytes = data.as_bytes();
+        let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
+        match writer.write_all(&length_prefix.to_bytes()?) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+        match writer.write_all(as_bytes) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+        return Ok(());
+    }
+    /// Converts a `String` to a VarInt length prefixed series of bytes.
+    pub fn string_to_bytes(data: String) -> Result<Vec<u8>, Error> {
+        let as_bytes = data.as_bytes();
+        let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
+        let mut vec_vals = as_bytes.to_vec();
+        for byte in length_prefix.to_bytes()? {
+            vec_vals.push(byte);
+        }
+        return Ok(vec_vals);
+    }
     /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
     pub fn bool_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
         let byte = read_byte(reader)?;
@@ -407,6 +553,36 @@ pub mod generalized {
             return Ok((true, 1));
         }
         return Err(Error::InvalidBool);
+    }
+    /// Either writes 0x00 or 0x01 to the writer. Come on, you don't need this.
+    pub fn bool_to_writer<W: std::io::Write>(writer: &mut W, data: bool) -> Result<(), Error> {
+        if data {
+            match writer.write_all(&[0x01]) {
+                Ok(_) => {},
+                Err(e) => {
+                    return Err(Error::WriterError(e));
+                }
+            }
+        }
+        else {
+            match writer.write_all(&[0x00]) {
+                Ok(_) => {},
+                Err(e) => {
+                    return Err(Error::WriterError(e));
+                }
+            }
+        }
+        return Ok(());
+    }
+    /// What's wrong with you? This isn't something you should need or use. It's one byte. It's not
+    /// even possible to get an error here.
+    pub fn bool_to_bytes(data: bool) -> Result<Vec<u8>, Error> {
+        if data {
+            return Ok(vec![0x01]);
+        }
+        else {
+            return Ok(vec![0x00]);
+        }
     }
 }
 
