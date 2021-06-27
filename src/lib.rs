@@ -439,17 +439,34 @@ impl Position {
         }
     }
     /// Converts a Position into a series of bytes.
-    /// WARNING: THIS FUNCTION HAS NOT BEEN VERIFIED TO WORK WITH NEGATIVE POSITIONS PROPERLY
-    pub fn to_bytes(&mut self) -> Result<Vec<u8>, Error> {
-        // This is some magic voodo from wiki.vg. No gaurentee it works, especially with the typecasts on negatives.
-        let u64val: u64 = ((self.x as u64 & 0x3FFFFFF) << 38) | ((self.z as u64 & 0x3FFFFFF) << 12) | (self.y as u64 & 0xFFF);
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        let xval;
+        let yval;
+        let zval;
+        if self.x < 0 {
+            xval = (self.x + (2^26)) as u64;
+        }
+        else {
+            xval = self.x as u64;
+        }
+        if self.z < 0 {
+            zval = (self.x + (2^26)) as u64;
+        }
+        else {
+            zval = self.z as u64;
+        }
+        if self.y < 0 {
+            yval = (self.y + (2^12)) as u64;
+        }
+        else {
+            yval = self.y as u64;
+        }
+        let u64val: u64 = ((xval & 0x3FFFFFF) << 38) | ((zval & 0x3FFFFFF) << 12) | (yval & 0xFFF);
         let u64bytes = u64val.to_be_bytes();
         return Ok(u64bytes.to_vec());
     }
     /// Writes a Position to a Write type.
-    /// WARNING: THIS FUNCTION HAS NOT BEEN VERIFIED TO WORK WITH NEGATIVE POSITIONS PROPERLY
-    pub fn to_writer<W: std::io::Write>(&mut self, writer: &mut W) -> Result<(), Error> {
-        // This is some magic voodo from wiki.vg. No gaurentee it works, especially with the typecasts on negatives.
+    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
         let u64val: u64 = ((self.x as u64 & 0x3FFFFFF) << 38) | ((self.z as u64 & 0x3FFFFFF) << 12) | (self.y as u64 & 0xFFF);
         let u64bytes = u64val.to_be_bytes();
         match writer.write_all(&u64bytes) {
@@ -653,6 +670,30 @@ mod test {
         assert_eq!(val_largest_num.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
         assert_eq!(val_minus_one.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01]);
         assert_eq!(val_smallest_num.to_bytes()?, [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01]);
+        return Ok(());
+    }
+    #[test]
+    fn position_standard_values() -> Result<(), Error> {
+        // Create the list of standard values
+        let zeroed = Position::from_values(0, 0, 0);
+        let max_value = Position::from_values(i32::MAX, i16::MAX, i32::MAX);
+        let min_value = Position::from_values(i32::MIN, i16::MIN, i32::MIN);
+
+        // Check that the values are still the same
+        assert_eq!(zeroed.get_x(), 0);
+        assert_eq!(zeroed.get_y(), 0);
+        assert_eq!(zeroed.get_z(), 0);
+        assert_eq!(max_value.get_x(), i32::MAX);
+        assert_eq!(max_value.get_y(), i16::MAX);
+        assert_eq!(max_value.get_z(), i32::MAX);
+        assert_eq!(min_value.get_x(), i32::MIN);
+        assert_eq!(min_value.get_y(), i16::MIN);
+        assert_eq!(min_value.get_z(), i32::MIN);
+
+        // Check that encoding works properly
+        assert_eq!(zeroed.to_bytes()?, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        assert_eq!(max_value.to_bytes()?, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+        assert_eq!(min_value.to_bytes()?, [0x00, 0x00, 0x06, 0x00, 0x00, 0x01, 0x80, 0x0E]);
         return Ok(());
     }
 }

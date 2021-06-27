@@ -23,7 +23,6 @@ This crate is in an early stage. Many features aren't yet present. Here's an ove
 - [ ] Slot
 - [ ] NBT
 - [X] Position
-  Writing negative positions may not work yet
 - [ ] Angle
 - [ ] UUID
 - [ ] Enums  
