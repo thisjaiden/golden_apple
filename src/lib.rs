@@ -34,12 +34,6 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<Error> for () {
-    fn from(_: Error) -> Self {
-        ()
-    }
-}
-
 /// Represents a Java Int (i32) using between 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarInt {
@@ -480,7 +474,9 @@ impl Position {
     }
 }
 
-
+/// `generalized` contains many repetetive and unnecisary functions for reading and writing data.
+/// For sake of completion and inclusiveness, all standard types that may be written over the
+/// stream, no matter how easy to parse, are included here.
 pub mod generalized {
     use super::Error;
     use super::read_byte;
@@ -546,7 +542,7 @@ pub mod generalized {
         return Ok(vec_vals);
     }
     /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
-    pub fn bool_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
+    pub fn boolean_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
         let byte = read_byte(reader)?;
         if byte == 0x00 {
             return Ok(false);
@@ -559,7 +555,7 @@ pub mod generalized {
     /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
     /// Side note: this function will always read just a single byte, making half of the
     /// return type pointless.
-    pub fn bool_from_bytes(bytes: &[u8]) -> Result<(bool, usize), Error> {
+    pub fn boolean_from_bytes(bytes: &[u8]) -> Result<(bool, usize), Error> {
         if bytes.len() < 1 {
             return Err(Error::MissingData);
         }
@@ -572,7 +568,7 @@ pub mod generalized {
         return Err(Error::InvalidBool);
     }
     /// Either writes 0x00 or 0x01 to the writer. Come on, you don't need this.
-    pub fn bool_to_writer<W: std::io::Write>(writer: &mut W, data: bool) -> Result<(), Error> {
+    pub fn boolean_to_writer<W: std::io::Write>(writer: &mut W, data: bool) -> Result<(), Error> {
         if data {
             match writer.write_all(&[0x01]) {
                 Ok(_) => {},
@@ -593,13 +589,229 @@ pub mod generalized {
     }
     /// What's wrong with you? This isn't something you should need or use. It's one byte. It's not
     /// even possible to get an error here.
-    pub fn bool_to_bytes(data: bool) -> Result<Vec<u8>, Error> {
+    pub fn boolean_to_bytes(data: bool) -> Result<Vec<u8>, Error> {
         if data {
             return Ok(vec![0x01]);
         }
         else {
             return Ok(vec![0x00]);
         }
+    }
+    /// Uses a Read type to read a Java Byte from the stream.
+    pub fn byte_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i8, Error> {
+        let byte = read_byte(reader)?;
+        return Ok(i8::from_be_bytes([byte]));
+    }
+    /// Reads a Java Byte from a list of bytes. Returns the value and number of bytes read.
+    pub fn byte_from_bytes(bytes: &[u8]) -> Result<(i8, usize), Error> {
+        if bytes.len() < 1 {
+            return Err(Error::MissingData);
+        }
+        return Ok((i8::from_be_bytes([bytes[0]]), 1));
+    }
+    /// Writes a Java Byte to a Write type.
+    pub fn byte_to_writer<W: std::io::Write>(writer: &mut W, byte: i8) -> Result<(), Error> {
+        match writer.write_all(&byte.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Byte as an array of bytes.
+    pub fn byte_to_bytes(byte: i8) -> Result<Vec<u8>, Error> {
+        return Ok(byte.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read an unsigned Java Byte from the stream.
+    pub fn unsigned_byte_from_reader<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
+        let byte = read_byte(reader)?;
+        return Ok(u8::from_be_bytes([byte]));
+    }
+    /// Reads an unsigned Java Byte from a list of bytes. Returns the value and number of bytes read.
+    pub fn unsigned_byte_from_bytes(bytes: &[u8]) -> Result<(u8, usize), Error> {
+        if bytes.len() < 1 {
+            return Err(Error::MissingData);
+        }
+        return Ok((u8::from_be_bytes([bytes[0]]), 1));
+    }
+    /// Writes an unsigned Java Byte to a Write type.
+    pub fn unsigned_byte_to_writer<W: std::io::Write>(writer: &mut W, byte: u8) -> Result<(), Error> {
+        match writer.write_all(&byte.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns an unsigned Java Byte as an array of bytes.
+    pub fn unsigned_byte_to_bytes(byte: u8) -> Result<Vec<u8>, Error> {
+        return Ok(byte.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read a Java Short from the stream.
+    pub fn short_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i16, Error> {
+        let bytes = [read_byte(reader)?, read_byte(reader)?];
+        return Ok(i16::from_be_bytes(bytes));
+    }
+    /// Reads a Java Short from a list of bytes. Returns the value and number of bytes read.
+    pub fn short_from_bytes(bytes: &[u8]) -> Result<(i16, usize), Error> {
+        if bytes.len() < 2 {
+            return Err(Error::MissingData);
+        }
+        return Ok((i16::from_be_bytes([bytes[0], bytes[1]]), 2));
+    }
+    /// Writes a Java Short to a Write type.
+    pub fn short_to_writer<W: std::io::Write>(writer: &mut W, short: i16) -> Result<(), Error> {
+        match writer.write_all(&short.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Short as an array of bytes.
+    pub fn short_to_bytes(short: i16) -> Result<Vec<u8>, Error> {
+        return Ok(short.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read an unsigned Java Short from the stream.
+    pub fn unsigned_short_from_reader<R: std::io::Read>(reader: &mut R) -> Result<u16, Error> {
+        let bytes = [read_byte(reader)?, read_byte(reader)?];
+        return Ok(u16::from_be_bytes(bytes));
+    }
+    /// Reads an unsigned Java Short from a list of bytes. Returns the value and number of bytes read.
+    pub fn unsigned_short_from_bytes(bytes: &[u8]) -> Result<(u16, usize), Error> {
+        if bytes.len() < 2 {
+            return Err(Error::MissingData);
+        }
+        return Ok((u16::from_be_bytes([bytes[0], bytes[1]]), 2));
+    }
+    /// Writes an unsigned Java Short to a Write type.
+    pub fn unsigned_short_to_writer<W: std::io::Write>(writer: &mut W, short: u16) -> Result<(), Error> {
+        match writer.write_all(&short.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns an unsigned Java Short as an array of bytes.
+    pub fn unsigned_short_to_bytes(short: u16) -> Result<Vec<u8>, Error> {
+        return Ok(short.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read a Java Int from the stream.
+    pub fn int_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i32, Error> {
+        let bytes = [read_byte(reader)?; 4];
+        return Ok(i32::from_be_bytes(bytes));
+    }
+    /// Reads a Java Int from a list of bytes. Returns the value and number of bytes read.
+    pub fn int_from_bytes(bytes: &[u8]) -> Result<(i32, usize), Error> {
+        if bytes.len() < 4 {
+            return Err(Error::MissingData);
+        }
+        return Ok((i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]), 4));
+    }
+    /// Writes a Java Int to a Write type.
+    pub fn int_to_writer<W: std::io::Write>(writer: &mut W, int: i32) -> Result<(), Error> {
+        match writer.write_all(&int.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Int as an array of bytes.
+    pub fn int_to_bytes(int: i32) -> Result<Vec<u8>, Error> {
+        return Ok(int.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read a Java Long from the stream.
+    pub fn long_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i64, Error> {
+        let bytes = [read_byte(reader)?; 8];
+        return Ok(i64::from_be_bytes(bytes));
+    }
+    /// Reads a Java Long from a list of bytes. Returns the value and number of bytes read.
+    pub fn long_from_bytes(bytes: &[u8]) -> Result<(i64, usize), Error> {
+        if bytes.len() < 8 {
+            return Err(Error::MissingData);
+        }
+        return Ok((i64::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]), 8));
+    }
+    /// Writes a Java Long to a Write type.
+    pub fn long_to_writer<W: std::io::Write>(writer: &mut W, long: i64) -> Result<(), Error> {
+        match writer.write_all(&long.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Long as an array of bytes.
+    pub fn long_to_bytes(long: i64) -> Result<Vec<u8>, Error> {
+        return Ok(long.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read a Java Float from the stream.
+    pub fn float_from_reader<R: std::io::Read>(reader: &mut R) -> Result<f32, Error> {
+        let bytes = [read_byte(reader)?; 4];
+        return Ok(f32::from_be_bytes(bytes));
+    }
+    /// Reads a Java Float from a list of bytes. Returns the value and number of bytes read.
+    pub fn float_from_bytes(bytes: &[u8]) -> Result<(f32, usize), Error> {
+        if bytes.len() < 4 {
+            return Err(Error::MissingData);
+        }
+        return Ok((f32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]), 4));
+    }
+    /// Writes a Java Float to a Write type.
+    pub fn float_to_writer<W: std::io::Write>(writer: &mut W, float: f32) -> Result<(), Error> {
+        match writer.write_all(&float.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Float as an array of bytes.
+    pub fn float_to_bytes(float: f32) -> Result<Vec<u8>, Error> {
+        return Ok(float.to_be_bytes().to_vec());
+    }
+    /// Uses a Read type to read a Java Double from the stream.
+    pub fn double_from_reader<R: std::io::Read>(reader: &mut R) -> Result<f64, Error> {
+        let bytes = [read_byte(reader)?; 8];
+        return Ok(f64::from_be_bytes(bytes));
+    }
+    /// Reads a Java Double from a list of bytes. Returns the value and number of bytes read.
+    pub fn double_from_bytes(bytes: &[u8]) -> Result<(f64, usize), Error> {
+        if bytes.len() < 8 {
+            return Err(Error::MissingData);
+        }
+        return Ok((f64::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]), 8));
+    }
+    /// Writes a Java Double to a Write type.
+    pub fn double_to_writer<W: std::io::Write>(writer: &mut W, double: f64) -> Result<(), Error> {
+        match writer.write_all(&double.to_be_bytes()) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+    }
+    /// Returns a Java Double as an array of bytes.
+    pub fn double_to_bytes(double: f64) -> Result<Vec<u8>, Error> {
+        return Ok(double.to_be_bytes().to_vec());
     }
 }
 

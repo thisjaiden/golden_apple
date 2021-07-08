@@ -12,7 +12,7 @@ Types that can be fully represented in Rust have encoders/decoders under `golden
 # Status
 This crate is in an early stage. Many features aren't yet present. Here's an overview of what is and isn't done:
 
-- [X] Boolean
+- [X] Standard Java Types  
 - [X] String  
 - [ ] Chat
 - [ ] Identifier  
