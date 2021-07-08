@@ -23,7 +23,11 @@ pub enum Error {
     /// There was not enough data present to parse.
     MissingData,
     /// A boolean had a value other than true or false.
-    InvalidBool
+    InvalidBool,
+    /// While reading NBT, the stream started with a value other than 0x0a.
+    InvalidNBTHeader,
+    /// While reading NBT, the stream had an invalid data type ID.
+    InvalidNBTType
 }
 
 impl std::fmt::Display for Error {
@@ -33,6 +37,88 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct NBT {
+    root_tag: NamedTag
+}
+
+impl NBT {
+    /// Reads an entire NBT compound from a Read type.
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NBT, Error> {
+        if read_byte(reader)? != 0x0a {
+            return Err(Error::InvalidNBTHeader);
+        }
+        let root_name = NBT::named_tag_name_reader(reader)?;
+        let mut elements = vec![];
+        loop {
+            let next_tag = NBT::read_tag(reader)?;
+            match next_tag.tag {
+                Tag::End => {
+                    break;
+                }
+                _ => {
+                    elements.push(next_tag);
+                }
+            }
+        }
+        return Ok(NBT { root_tag: NamedTag { name: root_name, tag: Tag::Compound(elements) } });
+    }
+    fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
+        let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
+        let mut bytes = vec![];
+        for _ in 0..string_len {
+            bytes.push(read_byte(reader)?);
+        }
+        // This is required because Mojang uses Java's modified utf-8 which isn't supported here
+        unsafe {
+            let string = String::from_utf8_unchecked(bytes);
+            return Ok(string);
+        }
+    }
+    fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
+        let tag_descriptor = read_byte(reader)?;
+        match tag_descriptor {
+            0x00 => {
+                return Ok(NamedTag { name: String::from("N/A"), tag: Tag::End });
+            }
+            0x01 => {
+                return Ok(
+                    NamedTag {
+                        name: NBT::named_tag_name_reader(reader)?,
+                        tag: Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))
+                    }
+                );
+            }
+            _ => {
+                return Err(Error::InvalidNBTType);
+            }
+        }
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Tag {
+    Byte(i8),
+    Short(i16),
+    Int(i32),
+    Long(i64),
+    Float(f32),
+    Double(f64),
+    ByteArray(Vec<i8>),
+    String(String),
+    List(Vec<Tag>),
+    Compound(Vec<NamedTag>),
+    IntArray(Vec<i32>),
+    LongArray(Vec<i64>),
+    End
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct NamedTag {
+    pub name: String,
+    pub tag: Tag
+}
 
 /// Represents a Java Int (i32) using between 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
