@@ -38,21 +38,17 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct NBT {
-    root_tag: NamedTag
-}
-
-impl NBT {
+pub mod nbt {
+    use super::{Error, read_byte};
     /// Reads an entire NBT compound from a Read type.
-    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NBT, Error> {
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
         if read_byte(reader)? != 0x0a {
             return Err(Error::InvalidNBTHeader);
         }
-        let root_name = NBT::named_tag_name_reader(reader)?;
+        let root_name = named_tag_name_reader(reader)?;
         let mut elements = vec![];
         loop {
-            let next_tag = NBT::read_tag(reader)?;
+            let next_tag = read_tag(reader)?;
             match next_tag.tag {
                 Tag::End => {
                     break;
@@ -62,7 +58,7 @@ impl NBT {
                 }
             }
         }
-        return Ok(NBT { root_tag: NamedTag { name: root_name, tag: Tag::Compound(elements) } });
+        return Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) });
     }
     fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
         let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
@@ -85,39 +81,87 @@ impl NBT {
             0x01 => {
                 return Ok(
                     NamedTag {
-                        name: NBT::named_tag_name_reader(reader)?,
+                        name: named_tag_name_reader(reader)?,
                         tag: Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))
                     }
                 );
+            }
+            0x02 => {
+                return Ok(
+                    NamedTag {
+                        name: named_tag_name_reader(reader)?,
+                        tag: Tag::Short(i16::from_be_bytes([read_byte(reader)?; 2]))
+                    }
+                );
+            }
+            0x03 => {
+                return Ok(
+                    NamedTag {
+                        name: named_tag_name_reader(reader)?,
+                        tag: Tag::Int(i32::from_be_bytes([read_byte(reader)?; 4]))
+                    }
+                );
+            }
+            0x04 => {
+                return Ok(
+                    NamedTag {
+                        name: named_tag_name_reader(reader)?,
+                        tag: Tag::Long(i64::from_be_bytes([read_byte(reader)?; 8]))
+                    }
+                );
+            }
+            0x05 => {
+                return Ok(
+                    NamedTag {
+                        name: named_tag_name_reader(reader)?,
+                        tag: Tag::Float(f32::from_be_bytes([read_byte(reader)?; 4]))
+                    }
+                );
+            }
+            0x06 => {
+                return Ok(
+                    NamedTag {
+                        name: named_tag_name_reader(reader)?,
+                        tag: Tag::Double(f64::from_be_bytes([read_byte(reader)?; 8]))
+                    }
+                );
+            }
+            0x07 => {
+                let tag_name = named_tag_name_reader(reader)?;
+                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+                let mut array = vec![];
+                for _ in 0..array_len {
+                    array.push(i8::from_be_bytes([read_byte(reader)?]));
+                }
+                return Ok(NamedTag { name: tag_name, tag: Tag::ByteArray(array) });
             }
             _ => {
                 return Err(Error::InvalidNBTType);
             }
         }
     }
-}
+    #[derive(PartialEq, Clone, Debug)]
+    pub enum Tag {
+        Byte(i8),
+        Short(i16),
+        Int(i32),
+        Long(i64),
+        Float(f32),
+        Double(f64),
+        ByteArray(Vec<i8>),
+        String(String),
+        List(Vec<Tag>),
+        Compound(Vec<NamedTag>),
+        IntArray(Vec<i32>),
+        LongArray(Vec<i64>),
+        End
+    }
 
-#[derive(PartialEq, Clone, Debug)]
-pub enum Tag {
-    Byte(i8),
-    Short(i16),
-    Int(i32),
-    Long(i64),
-    Float(f32),
-    Double(f64),
-    ByteArray(Vec<i8>),
-    String(String),
-    List(Vec<Tag>),
-    Compound(Vec<NamedTag>),
-    IntArray(Vec<i32>),
-    LongArray(Vec<i64>),
-    End
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct NamedTag {
-    pub name: String,
-    pub tag: Tag
+    #[derive(PartialEq, Clone, Debug)]
+    pub struct NamedTag {
+        pub name: String,
+        pub tag: Tag
+    }
 }
 
 /// Represents a Java Int (i32) using between 1-5 bytes.
@@ -914,9 +958,9 @@ fn read_byte<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
 }
 
 mod test {
-    use super::*;
     #[test]
-    fn varint_standard_values() -> Result<(), Error> {
+    fn varint_standard_values() -> Result<(), super::Error> {
+        use super::VarInt;
         // Create the list of standard values
         let val_0 = VarInt::from_value(0)?;
         let val_1 = VarInt::from_value(1)?;
@@ -947,7 +991,8 @@ mod test {
         return Ok(());
     }
     #[test]
-    fn varlong_standard_values() -> Result<(), Error> {
+    fn varlong_standard_values() -> Result<(), super::Error> {
+        use super::VarLong;
         // Create the list of standard values
         let val_0 = VarLong::from_value(0)?;
         let val_1 = VarLong::from_value(1)?;
@@ -971,7 +1016,8 @@ mod test {
         return Ok(());
     }
     #[test]
-    fn position_standard_values() -> Result<(), Error> {
+    fn position_standard_values() -> Result<(), super::Error> {
+        use super::Position;
         // Create the list of standard values
         let zeroed = Position::from_values(0, 0, 0);
         let max_value = Position::from_values(i32::MAX, i16::MAX, i32::MAX);
