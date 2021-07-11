@@ -6,11 +6,11 @@
 - Simplify the decoding and encoding of network data
 
 # Usage
-Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top level crate.  
+Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top level crate. NBT is dealt with in the `nbt` module. 
 Types that can be fully represented in Rust have encoders/decoders under `golden_apple::generalized`, in case it isn't striaghtforward to do so.
 
 # Status
-This crate is in an early stage. Many features aren't yet present. Here's an overview of what is and isn't done:
+This crate is unfinished and some features aren't yet present. Here's an overview of what is and isn't done:
 
 - [X] Standard Java Types  
 - [X] String  
@@ -21,7 +21,8 @@ This crate is in an early stage. Many features aren't yet present. Here's an ove
 - [X] VarLong
 - [ ] Metadata
 - [ ] Slot
-- [ ] NBT
+- [X] NBT  
+  No support for writing NBT yet.
 - [X] Position
 - [ ] Angle
 - [ ] UUID

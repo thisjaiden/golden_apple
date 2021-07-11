@@ -38,6 +38,7 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+/// Provides tools for reading and managing NBT types.
 pub mod nbt {
     use super::{Error, read_byte};
     /// Reads an entire NBT compound from a Read type.
@@ -48,7 +49,7 @@ pub mod nbt {
         let root_name = named_tag_name_reader(reader)?;
         let mut elements = vec![];
         loop {
-            let next_tag = read_tag(reader)?;
+            let next_tag = read_named_tag(reader)?;
             match next_tag.tag {
                 Tag::End => {
                     break;
@@ -72,68 +73,97 @@ pub mod nbt {
             return Ok(string);
         }
     }
-    fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
-        let tag_descriptor = read_byte(reader)?;
-        match tag_descriptor {
+    fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
+        let tag_type = read_byte(reader)?;
+        let tag_name;
+        if !(tag_type == 0x00) {
+            tag_name = named_tag_name_reader(reader)?;
+        }
+        else {
+            tag_name = String::from("N/A");
+        }
+        let tag_val = read_from_type(reader, tag_type)?;
+        return Ok(NamedTag { name: tag_name, tag: tag_val });
+    }
+    fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
+        let tag_type = read_byte(reader)?;
+        let tag_val = read_from_type(reader, tag_type)?;
+        return Ok(tag_val);
+    }
+    fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
+        match type_id {
             0x00 => {
-                return Ok(NamedTag { name: String::from("N/A"), tag: Tag::End });
+                return Ok(Tag::End);
             }
             0x01 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))
-                    }
-                );
+                return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?])));
             }
             0x02 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Short(i16::from_be_bytes([read_byte(reader)?; 2]))
-                    }
-                );
+                return Ok(Tag::Short(i16::from_be_bytes([read_byte(reader)?; 2])));
             }
             0x03 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Int(i32::from_be_bytes([read_byte(reader)?; 4]))
-                    }
-                );
+                return Ok(Tag::Int(i32::from_be_bytes([read_byte(reader)?; 4])));
             }
             0x04 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Long(i64::from_be_bytes([read_byte(reader)?; 8]))
-                    }
-                );
+                return Ok(Tag::Long(i64::from_be_bytes([read_byte(reader)?; 8])));
             }
             0x05 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Float(f32::from_be_bytes([read_byte(reader)?; 4]))
-                    }
-                );
+                return Ok(Tag::Float(f32::from_be_bytes([read_byte(reader)?; 4])));
             }
             0x06 => {
-                return Ok(
-                    NamedTag {
-                        name: named_tag_name_reader(reader)?,
-                        tag: Tag::Double(f64::from_be_bytes([read_byte(reader)?; 8]))
-                    }
-                );
+                return Ok(Tag::Double(f64::from_be_bytes([read_byte(reader)?; 8])));
             }
             0x07 => {
-                let tag_name = named_tag_name_reader(reader)?;
                 let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
                 let mut array = vec![];
                 for _ in 0..array_len {
                     array.push(i8::from_be_bytes([read_byte(reader)?]));
                 }
-                return Ok(NamedTag { name: tag_name, tag: Tag::ByteArray(array) });
+                return Ok(Tag::ByteArray(array));
+            }
+            0x08 => {
+                return Ok(Tag::String(named_tag_name_reader(reader)?));
+            }
+            0x09 => {
+                let _list_type = read_byte(reader)?;
+                let list_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+                if list_len < 1 {
+                    return Ok(Tag::List(vec![Tag::End]));
+                }
+                let mut list_elements = vec![];
+                for _ in 0..list_len {
+                    list_elements.push(read_tag(reader)?);
+                }
+                return Ok(Tag::List(list_elements))
+            }
+            0x0A => {
+                let mut compound_elements = vec![];
+                loop {
+                    let tag = read_named_tag(reader)?;
+                    if tag.tag == Tag::End {
+                        break;
+                    }
+                    else {
+                        compound_elements.push(tag);
+                    }
+                }
+                return Ok(Tag::Compound(compound_elements));
+            }
+            0x0B => {
+                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+                let mut array = vec![];
+                for _ in 0..array_len {
+                    array.push(i32::from_be_bytes([read_byte(reader)?; 4]));
+                }
+                return Ok(Tag::IntArray(array));
+            }
+            0x0C => {
+                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+                let mut array = vec![];
+                for _ in 0..array_len {
+                    array.push(i64::from_be_bytes([read_byte(reader)?; 8]));
+                }
+                return Ok(Tag::LongArray(array));
             }
             _ => {
                 return Err(Error::InvalidNBTType);
