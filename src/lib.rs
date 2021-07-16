@@ -171,25 +171,42 @@ pub mod nbt {
         }
     }
     #[derive(PartialEq, Clone, Debug)]
+    /// Represents a value in a NBT structure.
     pub enum Tag {
+        /// A signed byte.
         Byte(i8),
+        /// A Java Short.
         Short(i16),
+        /// A Java Int.
         Int(i32),
+        /// A Java Long.
         Long(i64),
+        /// A Java Float.
         Float(f32),
+        /// A Java Double.
         Double(f64),
+        /// An array of signed bytes.
         ByteArray(Vec<i8>),
+        /// A Java modified UTF-8 string.
         String(String),
+        /// A list type containing a list of tags without names. All tags will be of the same type.
         List(Vec<Tag>),
+        /// A compound type containing a list of named tags.
         Compound(Vec<NamedTag>),
+        /// An array of Java Ints.
         IntArray(Vec<i32>),
+        /// An array of Java Longs.
         LongArray(Vec<i64>),
+        /// Represents the end of a compound or list tag.
         End
     }
 
     #[derive(PartialEq, Clone, Debug)]
+    /// Represents a key-value pair in a NBT structure.
     pub struct NamedTag {
+        /// Name of the given tag.
         pub name: String,
+        /// Tag of this pair.
         pub tag: Tag
     }
 }
