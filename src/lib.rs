@@ -27,7 +27,9 @@ pub enum Error {
     /// While reading NBT, the stream started with a value other than 0x0a.
     InvalidNBTHeader,
     /// While reading NBT, the stream had an invalid data type ID.
-    InvalidNBTType
+    InvalidNBTType,
+    /// While writing NBT, the root tag was not Tag::Compound.
+    InvalidRootTag
 }
 
 impl std::fmt::Display for Error {
@@ -38,7 +40,7 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-/// Provides tools for reading and managing NBT types.
+/// Provides tools for reading, writing, and managing NBT types.
 pub mod nbt {
     use super::{Error, read_byte};
     /// Reads an entire NBT compound from a Read type.
@@ -60,6 +62,42 @@ pub mod nbt {
             }
         }
         return Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) });
+    }
+    /// Converts an entire NBT compound into an array of bytes. This must be a full NBT compound.
+    pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
+        let mut final_bytes = vec![];
+        // Add start tag
+        final_bytes.push(0x0a);
+        // Add root tag name
+        for byte in root_tag.name.as_bytes() {
+            final_bytes.push(*byte);
+        }
+        // Add root tag components
+        if let Tag::Compound(cmptag) = root_tag.tag {
+            for tag in cmptag {
+                let prefix = tag.tag.clone().tag_prefix();
+                final_bytes.push(prefix);
+                if prefix == 0 {
+                    break;
+                }
+                let name = tag.name.as_bytes();
+                for byte in &(name.len() as u16).to_be_bytes() {
+                    final_bytes.push(*byte);
+                }
+                for byte in name {
+                    final_bytes.push(*byte);
+                }
+                for byte in tag.tag.write_to_bytes()? {
+                    final_bytes.push(byte);
+                }
+            }
+        }
+        else {
+            return Err(Error::InvalidRootTag);
+        }
+        // Add end tag
+        final_bytes.push(0x00);
+        return Ok(final_bytes);
     }
     fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
         let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
@@ -199,6 +237,133 @@ pub mod nbt {
         LongArray(Vec<i64>),
         /// Represents the end of a compound or list tag.
         End
+    }
+    impl Tag {
+        fn tag_prefix(self) -> u8 {
+            match self {
+                Self::End => 0,
+                Self::Byte(_) => 1,
+                Self::Short(_) => 2,
+                Self::Int(_) => 3,
+                Self::Long(_) => 4,
+                Self::Float(_) => 5,
+                Self::Double(_) => 6,
+                Self::ByteArray(_) => 7,
+                Self::String(_) => 8,
+                Self::List(_) => 9,
+                Self::Compound(_) => 10,
+                Self::IntArray(_) => 11,
+                Self::LongArray(_) => 12
+            }
+        }
+        /// Writes this tag to a series of bytes. Does not include the tag's type ID prefix. Does
+        /// include list and compound tag's ending byte.
+        pub fn write_to_bytes(self) -> Result<Vec<u8>, Error> {
+            match self {
+                // The end tag has no data.
+                Self::End => return Ok(vec![]),
+                // It would be great to compact these as they use similar footprints, but the
+                // different data types prevent doing this practically.
+                Self::Byte(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::Short(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::Int(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::Long(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::Float(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::Double(data) => {
+                    return Ok(data.to_be_bytes().to_vec());
+                },
+                Self::ByteArray(data) => {
+                    let len_prefix = data.len() as i32;
+                    let mut final_data = vec![];
+                    for byte in &len_prefix.to_be_bytes() {
+                        final_data.push(*byte);
+                    }
+                    for byte in data {
+                        final_data.push(byte.to_be_bytes()[0]);
+                    }
+                    return Ok(final_data);
+                },
+                Self::IntArray(data) => {
+                    let len_prefix = data.len() as i32;
+                    let mut final_data = vec![];
+                    for byte in &len_prefix.to_be_bytes() {
+                        final_data.push(*byte);
+                    }
+                    for chunk in data {
+                        for byte in &chunk.to_be_bytes() {
+                            final_data.push(*byte);
+                        }
+                    }
+                    return Ok(final_data);
+                },
+                Self::LongArray(data) => {
+                    let len_prefix = data.len() as i32;
+                    let mut final_data = vec![];
+                    for byte in &len_prefix.to_be_bytes() {
+                        final_data.push(*byte);
+                    }
+                    for chunk in data {
+                        for byte in &chunk.to_be_bytes() {
+                            final_data.push(*byte);
+                        }
+                    }
+                    return Ok(final_data);
+                },
+                Self::String(data) => {
+                    let mut final_data = vec![];
+                    let strbytes = data.as_bytes();
+                    for byte in &(strbytes.len() as u16).to_be_bytes() {
+                        final_data.push(*byte);
+                    }
+                    for byte in strbytes {
+                        final_data.push(*byte);
+                    }
+                    return Ok(final_data);
+                },
+                Self::List(data) => {
+                    let mut final_data = vec![];
+                    final_data.push(data[0].clone().tag_prefix());
+                    for byte in &(data.len() as i32).to_be_bytes() {
+                        final_data.push(*byte);
+                    }
+                    for element in data {
+                        for byte in element.write_to_bytes()? {
+                            final_data.push(byte);
+                        }
+                    }
+                    final_data.push(0x00);
+                    return Ok(final_data);
+                },
+                Self::Compound(data) => {
+                    let mut final_data = vec![];
+                    for named_tag in data {
+                        final_data.push(named_tag.tag.clone().tag_prefix());
+                        let name_bytes = named_tag.name.as_bytes();
+                        for byte in &(name_bytes.len() as u16).to_be_bytes() {
+                            final_data.push(*byte);
+                        }
+                        for byte in name_bytes {
+                            final_data.push(*byte);
+                        }
+                        for byte in named_tag.tag.write_to_bytes()? {
+                            final_data.push(byte);
+                        }
+                    }
+                    final_data.push(0x00);
+                    return Ok(final_data);
+                }
+            }
+        }
     }
 
     #[derive(PartialEq, Clone, Debug)]

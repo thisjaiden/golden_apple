@@ -22,7 +22,6 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [ ] Metadata
 - [ ] Slot
 - [X] NBT  
-  No support for writing NBT yet.
 - [X] Position
 - [ ] Angle
 - [ ] UUID
