@@ -376,6 +376,69 @@ pub mod nbt {
     }
 }
 
+use std::f64::consts::PI;
+/// Represents an angle. Cannot be greater than one full rotation, does not have negative values.
+pub struct Angle {
+    value: u8
+}
+
+impl Angle {
+    /// Creates a new `Angle` using a byte. The byte is expected to reperesent how many 256ths of a
+    /// full turn this angle represents.
+    pub fn from_byte(data: u8) -> Angle {
+        return Angle {
+            value: data
+        };
+    }
+    /// Creates a new `Angle` that is the given amount of degrees. Absoulte value is taken for
+    /// negative values. Values over a full turn have the amount of turns discarded. Some
+    /// significant precision is lost switching to Minecraft's format.
+    pub fn from_degrees(degrees: f64) -> Angle {
+        let mut workable = degrees;
+        if workable < 0.0 {
+            workable = workable * -1.0;
+        }
+        while workable > 360.0 {
+            workable -= 360.0;
+        }
+        return Angle {
+            value: ((workable / 360.0) * 256.0) as u8
+        };
+    }
+    /// Creates a new `Angle` that is the given amount of radians. Absoulte value is taken for
+    /// negative values. Values over a full turn have the amount of turns discarded. Some
+    /// significant precision is lost switching to Minecraft's format.
+    pub fn from_radians(radians: f64) -> Angle {
+        let mut workable = radians;
+        if workable < 0.0 {
+            workable = workable * -1.0;
+        }
+        while workable > 2.0 * PI {
+            workable -= 2.0 * PI;
+        }
+        return Angle {
+            value: ((workable / (2.0 * PI)) * 256.0) as u8
+        };
+    }
+    /// Returns how many 256ths of a full turn this angle represents. This is the data's actual
+    /// format, and the most exact representation.
+    pub fn as_256ths(self) -> u8 {
+        return self.value;
+    }
+    /// Returns how many degrees this angle represents.
+    pub fn to_degrees(self) -> f64 {
+        return ((self.as_256ths() as f64) / 256.0) * 360.0;
+    }
+    /// Returns how many radians this angle represents.
+    pub fn to_radians(self) -> f64 {
+        return self.to_degrees() * (PI/180.0);
+    }
+    /// Encodes this angle as a byte representing how many 256ths of a full turn this angle is.
+    pub fn to_byte(self) -> u8 {
+        return self.value;
+    }
+}
+
 /// Represents a Java Int (i32) using between 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarInt {

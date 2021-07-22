@@ -23,7 +23,7 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [ ] Slot
 - [X] NBT  
 - [X] Position
-- [ ] Angle
+- [X] Angle
 - [ ] UUID
 - [ ] Enums  
   This refers to a variety of actual things
