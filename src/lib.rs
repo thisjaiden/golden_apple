@@ -31,7 +31,9 @@ pub enum Error {
     /// While writing NBT, the root tag was not Tag::Compound.
     InvalidRootTag,
     /// The given identifier had more than one `:`, rendering it invalid.
-    InvalidIdentifier
+    InvalidIdentifier,
+    /// A given ID for an Enum was out of valid bounds for that type.
+    EnumOutOfBound
 }
 
 impl std::fmt::Display for Error {
@@ -41,6 +43,370 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+/// Provides tools for reading, writing, and managing the various enums that Minecraft uses.
+/// Many of these enums contain descriptions of their respective attributes in quotes. This
+/// indicates that the information is taken directly from https://wiki.vg/Protocol_FAQ
+pub mod enums {
+    use crate::Error;
+    use std::convert::TryFrom;
+
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    /// Represents the level of chat messages a given client would like to receive.
+    pub enum ChatSettings {
+        /// "The client is willing to accept all chat messages."
+        Full = 0,
+        /// "The client is willing to accept messages from commands, but does not want general chat
+        /// from other players."
+        System = 1,
+        /// "The client does not want any chat at all. (However, it is still fine with above-hotbar
+        /// game notices)"
+        None = 2
+    }
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    /// Represents the type of chat message being sent.
+    pub enum MessageType {
+        /// "A player-initiated chat message. Note that the Notchian server does not include
+        /// message-related commands here (/me and /tell); those go in System."
+        Chat = 0,
+        /// "Feedback from running a command, such as 'Your game mode has been updated to creative.'"
+        System = 1,
+        /// "Game state information that is displayed above the hot bar, such as 'You may not rest
+        /// now, the bed is too far away'."
+        GameInfo = 2
+    }
+    impl TryFrom<u8> for MessageType {
+        type Error = Error;
+        fn try_from(value: u8) -> Result<Self, Self::Error> {
+            match value {
+                x if x == MessageType::Chat as u8 => Ok(MessageType::Chat),
+                x if x == MessageType::System as u8 => Ok(MessageType::System),
+                x if x == MessageType::GameInfo as u8 => Ok(MessageType::GameInfo),
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
+    impl MessageType {
+        pub fn to_byte(self) -> u8 {
+            return self as u8;
+        }
+        pub fn from_byte(byte: u8) -> Result<Self, Error> {
+            use std::convert::TryInto;
+            match byte.try_into() {
+                Ok(enumval) => {
+                    return Ok(enumval);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+    }
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    /// Indicates which type of particle is being refrenced.
+    pub enum ParticleType {
+        AmbientEntityEffect = 0,
+        AngryVilalger = 1,
+        Barrier = 2,
+        Light = 3,
+        Block = 4,
+        Bubble = 5,
+        Cloud = 6,
+        Crit = 7,
+        DamageIndicator = 8,
+        DragonBreath = 9,
+        DrippingLava = 10,
+        FallingLava = 11,
+        LandingLava = 12,
+        DrippingWater = 13,
+        FallingWater = 14,
+        Dust = 15,
+        DustColorTransition = 16,
+        Effect = 17,
+        ElderGuardian = 18,
+        EnchantedHit = 19,
+        Enchant = 20,
+        EndRod = 21,
+        EntityEffect = 22,
+        ExplosionEmitter = 23,
+        Explosion = 24,
+        FallingDust = 25,
+        Firework = 26,
+        Fishing = 27,
+        Flame = 28,
+        SoulFireFlame = 29,
+        Soul = 30,
+        Flash = 31,
+        HappyVillager = 32,
+        Composter = 33,
+        Heart = 34,
+        InstantEffect = 35,
+        Item = 36,
+        Vibration = 37,
+        ItemSlime = 38,
+        ItemSnowball = 39,
+        LargeSmoke = 40,
+        Lava = 41,
+        Mycelium = 42,
+        Note = 43,
+        Poof = 44,
+        Portal = 45,
+        Rain = 46,
+        Smoke = 47,
+        Sneeze = 48,
+        Spit = 49,
+        SquidInk = 50,
+        SweepAttack = 51,
+        TotemOfUndying = 52,
+        Underwater = 53,
+        Splash = 54,
+        Witch = 55,
+        BubblePop = 56,
+        CurrentDown = 57,
+        BubbleColumnUp = 58,
+        Nautilus = 59,
+        Dolphin = 60,
+        CampfireCosySmoke = 61,
+        CampfireSignalSmoke = 62,
+        DrippingHoney = 63,
+        FallingHoney = 64,
+        LandingHoney = 65,
+        FallingNectar = 66,
+        FallingSporeBlossom = 67,
+        Ash = 68,
+        CrimsonSpore = 69,
+        WarpedSpore = 70,
+        SporeBlossomAir = 71,
+        DrippingObsidianTear = 72,
+        FallingObsidianTear = 73,
+        LandingObsidianTear = 74,
+        ReversePortal = 75,
+        WhiteAsh = 76,
+        SmallFlame = 77,
+        Snowflake = 78,
+        DrippingDripstoneLava = 79,
+        FallingDripstoneLava = 80,
+        DrippingDripstoneWater = 81,
+        FallingDripstoneWater = 82,
+        GlowSquidInk = 83,
+        Glow = 84,
+        WaxOn = 85,
+        WaxOff = 86,
+        ElectricSpark = 87,
+        Scrape = 88
+    }
+    
+    impl TryFrom<u8> for ParticleType {
+        type Error = Error;
+        fn try_from(value: u8) -> Result<Self, Self::Error> {
+            match value {
+                x if x == Self::AmbientEntityEffect as u8 => Ok(Self::AmbientEntityEffect),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::Ash as u8 => Ok(Self::Ash),
+                x if x == Self::Barrier as u8 => Ok(Self::Barrier),
+                x if x == Self::Block as u8 => Ok(Self::Block),
+                x if x == Self::Bubble as u8 => Ok(Self::Bubble),
+                x if x == Self::BubbleColumnUp as u8 => Ok(Self::BubbleColumnUp),
+                x if x == Self::BubblePop as u8 => Ok(Self::BubblePop),
+                x if x == Self::CampfireCosySmoke as u8 => Ok(Self::CampfireCosySmoke),
+                x if x == Self::CampfireSignalSmoke as u8 => Ok(Self::CampfireSignalSmoke),
+                x if x == Self::Cloud as u8 => Ok(Self::Cloud),
+                x if x == Self::Composter as u8 => Ok(Self::Composter),
+                x if x == Self::CrimsonSpore as u8 => Ok(Self::CrimsonSpore),
+                x if x == Self::Crit as u8 => Ok(Self::Crit),
+                x if x == Self::CurrentDown as u8 => Ok(Self::CurrentDown),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
+    impl ParticleType {
+        /// Returns the Identifier for this ParticleType
+        pub fn to_identifier(self) -> Result<super::Identifier, super::Error> {
+            use super::Identifier;
+            match self {
+                Self::AmbientEntityEffect => return Identifier::from_string(String::from("ambient_entity_effect")),
+                Self::AngryVilalger => return Identifier::from_string(String::from("angry_villager")),
+                Self::Ash => return Identifier::from_string(String::from("ash")),
+                Self::Barrier => return Identifier::from_string(String::from("barrier")),
+                Self::Block => return Identifier::from_string(String::from("block")),
+                Self::Bubble => return Identifier::from_string(String::from("bubble")),
+                Self::BubbleColumnUp => return Identifier::from_string(String::from("bubble_column_up")),
+                Self::BubblePop => return Identifier::from_string(String::from("bubble_pop")),
+                Self::CampfireCosySmoke => return Identifier::from_string(String::from("campfire_cosy_smoke")),
+                Self::CampfireSignalSmoke => return Identifier::from_string(String::from("campfire_signal_smoke")),
+                Self::Cloud => return Identifier::from_string(String::from("cloud")),
+                Self::Composter => return Identifier::from_string(String::from("composter")),
+                Self::CrimsonSpore => return Identifier::from_string(String::from("crimson_spore")),
+                Self::Crit => return Identifier::from_string(String::from("crit")),
+                Self::CurrentDown => return Identifier::from_string(String::from("current_down")),
+                Self::DamageIndicator => return Identifier::from_string(String::from("damage_indicator")),
+                Self::Dolphin => return Identifier::from_string(String::from("dolphin")),
+                Self::DragonBreath => return Identifier::from_string(String::from("dragon_breath")),
+                Self::DrippingDripstoneLava => return Identifier::from_string(String::from("dripping_dripstone_lava")),
+                Self::DrippingDripstoneWater => return Identifier::from_string(String::from("dripping_dripstone_water")),
+                Self::DrippingHoney => return Identifier::from_string(String::from("dripping_honey")),
+                Self::DrippingLava => return Identifier::from_string(String::from("dripping_lava")),
+                Self::DrippingObsidianTear => return Identifier::from_string(String::from("dripping_obsidian_tear")),
+                Self::DrippingWater => return Identifier::from_string(String::from("dripping_water")),
+                Self::Dust => return Identifier::from_string(String::from("dust")),
+                Self::DustColorTransition => return Identifier::from_string(String::from("dust_color_transition")),
+                Self::Effect => return Identifier::from_string(String::from("effect")),
+                Self::ElderGuardian => return Identifier::from_string(String::from("elder_guardian")),
+                Self::ElectricSpark => return Identifier::from_string(String::from("electric_spark")),
+                Self::Enchant => return Identifier::from_string(String::from("enchant")),
+                Self::EnchantedHit => return Identifier::from_string(String::from("enchanted_hit")),
+                Self::EndRod => return Identifier::from_string(String::from("end_rod")),
+                Self::EntityEffect => return Identifier::from_string(String::from("entity_effect")),
+                Self::Explosion => return Identifier::from_string(String::from("explosion")),
+                Self::ExplosionEmitter => return Identifier::from_string(String::from("explosion_emitter")),
+                Self::FallingDripstoneLava => return Identifier::from_string(String::from("falling_dripstone_lava")),
+                Self::FallingDripstoneWater => return Identifier::from_string(String::from("falling_dripstone_water")),
+                Self::FallingDust => return Identifier::from_string(String::from("falling_dust")),
+                Self::FallingHoney => return Identifier::from_string(String::from("falling_honey")),
+                Self::FallingLava => return Identifier::from_string(String::from("falling_lava")),
+                Self::FallingNectar => return Identifier::from_string(String::from("falling_nectar")),
+                Self::FallingObsidianTear => return Identifier::from_string(String::from("falling_obsidian_tear")),
+                Self::FallingSporeBlossom => return Identifier::from_string(String::from("falling_spore_blossom")),
+                Self::FallingWater => return Identifier::from_string(String::from("falling_water")),
+                Self::Firework => return Identifier::from_string(String::from("firework")),
+                Self::Fishing => return Identifier::from_string(String::from("fishing")),
+                Self::Flame => return Identifier::from_string(String::from("flame")),
+                Self::Flash => return Identifier::from_string(String::from("flash")),
+                Self::Glow => return Identifier::from_string(String::from("glow")),
+                Self::GlowSquidInk => return Identifier::from_string(String::from("glow_squid_ink")),
+                Self::HappyVillager => return Identifier::from_string(String::from("happy_villager")),
+                Self::Heart => return Identifier::from_string(String::from("heart")),
+                Self::InstantEffect => return Identifier::from_string(String::from("instant_effect")),
+                Self::Item => return Identifier::from_string(String::from("item")),
+                Self::ItemSlime => return Identifier::from_string(String::from("item_slime")),
+                Self::ItemSnowball => return Identifier::from_string(String::from("item_snowball")),
+                Self::LandingHoney => return Identifier::from_string(String::from("landing_honey")),
+                Self::LandingLava => return Identifier::from_string(String::from("landing_lava")),
+                Self::LandingObsidianTear => return Identifier::from_string(String::from("landing_obsidian_tear")),
+                Self::LargeSmoke => return Identifier::from_string(String::from("large_smoke")),
+                Self::Lava => return Identifier::from_string(String::from("lava")),
+                Self::Light => return Identifier::from_string(String::from("light")),
+                Self::Mycelium => return Identifier::from_string(String::from("mycelium")),
+                Self::Nautilus => return Identifier::from_string(String::from("nautilus")),
+                Self::Note => return Identifier::from_string(String::from("note")),
+                Self::Poof => return Identifier::from_string(String::from("poof")),
+                Self::Portal => return Identifier::from_string(String::from("portal")),
+                Self::Rain => return Identifier::from_string(String::from("rain")),
+                Self::ReversePortal => return Identifier::from_string(String::from("reverse_portal")),
+                Self::Scrape => return Identifier::from_string(String::from("scrape")),
+                Self::SmallFlame => return Identifier::from_string(String::from("small_flame")),
+                Self::Smoke => return Identifier::from_string(String::from("smoke")),
+                Self::Sneeze => return Identifier::from_string(String::from("sneeze")),
+                Self::Snowflake => return Identifier::from_string(String::from("snowflake")),
+                Self::Soul => return Identifier::from_string(String::from("soul")),
+                Self::SoulFireFlame => return Identifier::from_string(String::from("soul_fire_flame")),
+                Self::Spit => return Identifier::from_string(String::from("spit")),
+                Self::Splash => return Identifier::from_string(String::from("splash")),
+                Self::SporeBlossomAir => return Identifier::from_string(String::from("spore_blossom_air")),
+                Self::SquidInk => return Identifier::from_string(String::from("squid_ink")),
+                Self::SweepAttack => return Identifier::from_string(String::from("sweep_attack")),
+                Self::TotemOfUndying => return Identifier::from_string(String::from("totem_of_undying")),
+                Self::Underwater => return Identifier::from_string(String::from("underwater")),
+                Self::Vibration => return Identifier::from_string(String::from("vibration")),
+                Self::WarpedSpore => return Identifier::from_string(String::from("warped_spore")),
+                Self::WaxOff => return Identifier::from_string(String::from("wax_off")),
+                Self::WaxOn => return Identifier::from_string(String::from("wax_on")),
+                Self::WhiteAsh => return Identifier::from_string(String::from("white_ash")),
+                Self::Witch => return Identifier::from_string(String::from("witch")),
+            }
+        }
+        pub fn to_byte(self) -> u8 {
+            return self as u8;
+        }
+        pub fn from_byte(byte: u8) -> Result<Self, Error> {
+            use std::convert::TryInto;
+            match byte.try_into() {
+                Ok(enumval) => {
+                    return Ok(enumval);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+    }
+}
 
 /// Provides tools for reading, writing, and managing NBT types.
 pub mod nbt {
