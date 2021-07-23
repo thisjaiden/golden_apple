@@ -29,7 +29,9 @@ pub enum Error {
     /// While reading NBT, the stream had an invalid data type ID.
     InvalidNBTType,
     /// While writing NBT, the root tag was not Tag::Compound.
-    InvalidRootTag
+    InvalidRootTag,
+    /// The given identifier had more than one `:`, rendering it invalid.
+    InvalidIdentifier
 }
 
 impl std::fmt::Display for Error {
@@ -376,7 +378,75 @@ pub mod nbt {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+/// Represents a namespaced selector.
+pub struct Identifier {
+    namespace: String,
+    selector: String
+}
+
+impl Identifier {
+    /// Creates a new Identifier using a stream of bytes. Returns how many bytes were used.
+    pub fn from_bytes(bytes: &[u8]) -> Result<(Identifier, usize), Error> {
+        let raw_parts = generalized::string_from_bytes(bytes)?;
+        return Ok((Identifier::from_string(raw_parts.0)?, raw_parts.1));
+    }
+    /// Creates a new Identifier from a Read type.
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Identifier, Error> {
+        return Ok(Identifier::from_string(generalized::string_from_reader(reader)?)?);
+    }
+    /// Creates a new Identifier from a String.
+    pub fn from_string(string: String) -> Result<Identifier, Error> {
+        let mut whole_chunks = vec![];
+        for chunk in string.split(":") {
+            whole_chunks.push(chunk);
+        }
+        if whole_chunks.len() > 2 {
+            return Err(Error::InvalidIdentifier);
+        }
+        else if whole_chunks.len() < 2 {
+            return Ok(Identifier {
+                namespace: String::from("minecraft"),
+                selector: String::from(whole_chunks[0])
+            });
+        }
+        else {
+            return Ok(Identifier {
+                namespace: String::from(whole_chunks[0]),
+                selector: String::from(whole_chunks[1])
+            });
+        }
+    }
+    /// Writes this Identifier to a series of bytes.
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        return Ok(generalized::string_to_bytes(self.to_string()?)?);
+    }
+    /// Writes this Identifier to a Write type.
+    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
+        generalized::string_to_writer(writer, self.to_string()?)?;
+        return Ok(());
+    }
+    /// Writes this Identifier to a String. Always writes in the extended format for selectors under
+    /// the `minecraft` namespace.
+    pub fn to_string(self) -> Result<String, Error> {
+        let mut full_string = String::new();
+        full_string += &self.namespace;
+        full_string += ":";
+        full_string += &self.selector;
+        return Ok(full_string);
+    }
+    /// Get the namespace of this Identifier. This is the part before the colon.
+    pub fn get_namespace(self) -> String {
+        return self.namespace;
+    }
+    /// Get the selector of this Identifier. This is the part after the colon.
+    pub fn get_selector(self) -> String {
+        return self.selector;
+    }
+}
+
 use std::f64::consts::PI;
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Represents an angle. Cannot be greater than one full rotation, does not have negative values.
 pub struct Angle {
     value: u8
@@ -384,11 +454,12 @@ pub struct Angle {
 
 impl Angle {
     /// Creates a new `Angle` using a byte. The byte is expected to reperesent how many 256ths of a
-    /// full turn this angle represents.
-    pub fn from_byte(data: u8) -> Angle {
-        return Angle {
-            value: data
-        };
+    /// full turn this angle represents. Always uses a single byte.
+    pub fn from_bytes(bytes: &[u8]) -> Result<(Angle, usize), Error> {
+        if bytes.len() < 1 {
+            return Err(Error::MissingData);
+        }
+        return Ok((Angle { value: bytes[0] }, 1));
     }
     /// Creates a new `Angle` that is the given amount of degrees. Absoulte value is taken for
     /// negative values. Values over a full turn have the amount of turns discarded. Some
@@ -434,8 +505,8 @@ impl Angle {
         return self.to_degrees() * (PI/180.0);
     }
     /// Encodes this angle as a byte representing how many 256ths of a full turn this angle is.
-    pub fn to_byte(self) -> u8 {
-        return self.value;
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        return Ok(vec![self.value]);
     }
 }
 

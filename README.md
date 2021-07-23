@@ -15,8 +15,7 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] Standard Java Types  
 - [X] String  
 - [ ] Chat
-- [ ] Identifier  
-  Pretty much just a String, not sure if this should be included
+- [X] Identifier
 - [X] VarInt
 - [X] VarLong
 - [ ] Metadata
