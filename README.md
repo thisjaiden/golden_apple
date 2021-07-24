@@ -25,5 +25,5 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] Angle
 - [ ] UUID
 - [ ] Enums  
-  This refers to a variety of actual things
+  Partial Support
   

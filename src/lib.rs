@@ -64,6 +64,36 @@ pub mod enums {
         /// game notices)"
         None = 2
     }
+    impl TryFrom<u8> for ChatSettings {
+        type Error = Error;
+        fn try_from(value: u8) -> Result<Self, Self::Error> {
+            match value {
+                x if x == ChatSettings::Full as u8 => Ok(ChatSettings::Full),
+                x if x == ChatSettings::System as u8 => Ok(ChatSettings::System),
+                x if x == ChatSettings::None as u8 => Ok(ChatSettings::None),
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
+    impl ChatSettings {
+        /// Creates a byte representation of this enum.
+        pub fn to_byte(self) -> u8 {
+            return self as u8;
+        }
+        /// Attempts to create an enum from a byte value.
+        pub fn from_byte(byte: u8) -> Result<Self, Error> {
+            use std::convert::TryInto;
+            match byte.try_into() {
+                Ok(enumval) => {
+                    return Ok(enumval);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+    }
+
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     #[repr(u8)]
     /// Represents the type of chat message being sent.
@@ -89,9 +119,11 @@ pub mod enums {
         }
     }
     impl MessageType {
+        /// Creates a byte representation of this enum.
         pub fn to_byte(self) -> u8 {
             return self as u8;
         }
+        /// Attempts to create an enum from a byte value.
         pub fn from_byte(byte: u8) -> Result<Self, Error> {
             use std::convert::TryInto;
             match byte.try_into() {
@@ -104,6 +136,47 @@ pub mod enums {
             }
         }
     }
+
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    /// Indicates the current section of the network protocol to use.
+    pub enum ProtocolState {
+        Handshake = 0,
+        Status = 1,
+        Login = 2,
+        Play = 3
+    }
+    impl TryFrom<u8> for ProtocolState {
+        type Error = Error;
+        fn try_from(value: u8) -> Result<Self, Self::Error> {
+            match value {
+                x if x == ProtocolState::Handshake as u8 => Ok(ProtocolState::Handshake),
+                x if x == ProtocolState::Status as u8 => Ok(ProtocolState::Status),
+                x if x == ProtocolState::Login as u8 => Ok(ProtocolState::Login),
+                x if x == ProtocolState::Play as u8 => Ok(ProtocolState::Play),
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
+    impl ProtocolState {
+        /// Creates a byte representation of this enum.
+        pub fn to_byte(self) -> u8 {
+            return self as u8;
+        }
+        /// Attempts to create an enum from a byte value.
+        pub fn from_byte(byte: u8) -> Result<Self, Error> {
+            use std::convert::TryInto;
+            match byte.try_into() {
+                Ok(enumval) => {
+                    return Ok(enumval);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+    }
+
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     #[repr(u8)]
     /// Indicates which type of particle is being refrenced.
@@ -218,85 +291,86 @@ pub mod enums {
                 x if x == Self::CrimsonSpore as u8 => Ok(Self::CrimsonSpore),
                 x if x == Self::Crit as u8 => Ok(Self::Crit),
                 x if x == Self::CurrentDown as u8 => Ok(Self::CurrentDown),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-                x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
+                x if x == Self::DamageIndicator as u8 => Ok(Self::DamageIndicator),
+                x if x == Self::Dolphin as u8 => Ok(Self::Dolphin),
+                x if x == Self::DragonBreath as u8 => Ok(Self::DragonBreath),
+                x if x == Self::DrippingDripstoneLava as u8 => Ok(Self::DrippingDripstoneLava),
+                x if x == Self::DrippingDripstoneWater as u8 => Ok(Self::DrippingDripstoneWater),
+                x if x == Self::DrippingHoney as u8 => Ok(Self::DrippingHoney),
+                x if x == Self::DrippingLava as u8 => Ok(Self::DrippingLava),
+                x if x == Self::DrippingObsidianTear as u8 => Ok(Self::DrippingObsidianTear),
+                x if x == Self::DrippingWater as u8 => Ok(Self::DrippingWater),
+                x if x == Self::Dust as u8 => Ok(Self::Dust),
+                x if x == Self::DustColorTransition as u8 => Ok(Self::DustColorTransition),
+                x if x == Self::Effect as u8 => Ok(Self::Effect),
+                x if x == Self::ElderGuardian as u8 => Ok(Self::ElderGuardian),
+                x if x == Self::ElectricSpark as u8 => Ok(Self::ElectricSpark),
+                x if x == Self::Enchant as u8 => Ok(Self::Enchant),
+                x if x == Self::EnchantedHit as u8 => Ok(Self::EnchantedHit),
+                x if x == Self::EndRod as u8 => Ok(Self::EndRod),
+                x if x == Self::EntityEffect as u8 => Ok(Self::EntityEffect),
+                x if x == Self::Explosion as u8 => Ok(Self::Explosion),
+                x if x == Self::ExplosionEmitter as u8 => Ok(Self::ExplosionEmitter),
+                x if x == Self::FallingDripstoneLava as u8 => Ok(Self::FallingDripstoneLava),
+                x if x == Self::FallingDripstoneWater as u8 => Ok(Self::FallingDripstoneWater),
+                x if x == Self::FallingDust as u8 => Ok(Self::FallingDust),
+                x if x == Self::FallingHoney as u8 => Ok(Self::FallingHoney),
+                x if x == Self::FallingLava as u8 => Ok(Self::FallingLava),
+                x if x == Self::FallingNectar as u8 => Ok(Self::FallingNectar),
+                x if x == Self::FallingObsidianTear as u8 => Ok(Self::FallingObsidianTear),
+                x if x == Self::FallingSporeBlossom as u8 => Ok(Self::FallingSporeBlossom),
+                x if x == Self::FallingWater as u8 => Ok(Self::FallingWater),
+                x if x == Self::Firework as u8 => Ok(Self::Firework),
+                x if x == Self::Fishing as u8 => Ok(Self::Fishing),
+                x if x == Self::Flame as u8 => Ok(Self::Flame),
+                x if x == Self::Flash as u8 => Ok(Self::Flash),
+                x if x == Self::Glow as u8 => Ok(Self::Glow),
+                x if x == Self::GlowSquidInk as u8 => Ok(Self::GlowSquidInk),
+                x if x == Self::HappyVillager as u8 => Ok(Self::HappyVillager),
+                x if x == Self::Heart as u8 => Ok(Self::Heart),
+                x if x == Self::InstantEffect as u8 => Ok(Self::InstantEffect),
+                x if x == Self::Item as u8 => Ok(Self::Item),
+                x if x == Self::ItemSlime as u8 => Ok(Self::ItemSlime),
+                x if x == Self::ItemSnowball as u8 => Ok(Self::ItemSnowball),
+                x if x == Self::LandingHoney as u8 => Ok(Self::LandingHoney),
+                x if x == Self::LandingLava as u8 => Ok(Self::LandingLava),
+                x if x == Self::LandingObsidianTear as u8 => Ok(Self::LandingObsidianTear),
+                x if x == Self::LargeSmoke as u8 => Ok(Self::LargeSmoke),
+                x if x == Self::Lava as u8 => Ok(Self::Lava),
+                x if x == Self::Light as u8 => Ok(Self::Light),
+                x if x == Self::Mycelium as u8 => Ok(Self::Mycelium),
+                x if x == Self::Nautilus as u8 => Ok(Self::Nautilus),
+                x if x == Self::Note as u8 => Ok(Self::Note),
+                x if x == Self::Poof as u8 => Ok(Self::Poof),
+                x if x == Self::Portal as u8 => Ok(Self::Portal),
+                x if x == Self::Rain as u8 => Ok(Self::Rain),
+                x if x == Self::ReversePortal as u8 => Ok(Self::ReversePortal),
+                x if x == Self::Scrape as u8 => Ok(Self::Scrape),
+                x if x == Self::SmallFlame as u8 => Ok(Self::SmallFlame),
+                x if x == Self::Smoke as u8 => Ok(Self::Smoke),
+                x if x == Self::Sneeze as u8 => Ok(Self::Sneeze),
+                x if x == Self::Snowflake as u8 => Ok(Self::Snowflake),
+                x if x == Self::Soul as u8 => Ok(Self::Soul),
+                x if x == Self::SoulFireFlame as u8 => Ok(Self::SoulFireFlame),
+                x if x == Self::Spit as u8 => Ok(Self::Spit),
+                x if x == Self::Splash as u8 => Ok(Self::Splash),
+                x if x == Self::SporeBlossomAir as u8 => Ok(Self::SporeBlossomAir),
+                x if x == Self::SquidInk as u8 => Ok(Self::SquidInk),
+                x if x == Self::SweepAttack as u8 => Ok(Self::SweepAttack),
+                x if x == Self::TotemOfUndying as u8 => Ok(Self::TotemOfUndying),
+                x if x == Self::Underwater as u8 => Ok(Self::Underwater),
+                x if x == Self::Vibration as u8 => Ok(Self::Vibration),
+                x if x == Self::WarpedSpore as u8 => Ok(Self::WarpedSpore),
+                x if x == Self::WaxOff as u8 => Ok(Self::WaxOff),
+                x if x == Self::WaxOn as u8 => Ok(Self::WaxOn),
+                x if x == Self::WhiteAsh as u8 => Ok(Self::WhiteAsh),
+                x if x == Self::Witch as u8 => Ok(Self::Witch),
                 _ => Err(Error::EnumOutOfBound)
             }
         }
     }
     impl ParticleType {
-        /// Returns the Identifier for this ParticleType
+        /// Returns the Identifier for this ParticleType.
         pub fn to_identifier(self) -> Result<super::Identifier, super::Error> {
             use super::Identifier;
             match self {
@@ -391,9 +465,11 @@ pub mod enums {
                 Self::Witch => return Identifier::from_string(String::from("witch")),
             }
         }
+        /// Creates a byte representation of this enum.
         pub fn to_byte(self) -> u8 {
             return self as u8;
         }
+        /// Attempts to create an enum from a byte value.
         pub fn from_byte(byte: u8) -> Result<Self, Error> {
             use std::convert::TryInto;
             match byte.try_into() {
