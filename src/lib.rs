@@ -33,7 +33,11 @@ pub enum Error {
     /// The given identifier had more than one `:`, rendering it invalid.
     InvalidIdentifier,
     /// A given ID for an Enum was out of valid bounds for that type.
-    EnumOutOfBound
+    EnumOutOfBound,
+    /// An error occured parsing JSON data using `serde_json`.
+    JsonParsingError(serde_json::Error),
+    /// A JSON tag had a weird root structure.
+    InvalidJsonRoot
 }
 
 impl std::fmt::Display for Error {
@@ -42,7 +46,132 @@ impl std::fmt::Display for Error {
     }
 }
 
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        return Error::JsonParsingError(e);
+    }
+}
+
 impl std::error::Error for Error {}
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Chat {
+    component: ChatComponent
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct ChatComponent {
+    pub text: Option<String>,
+    pub translate: Option<String>,
+    pub keybind: Option<String>,
+    pub score: Option<ChatScore>,
+    pub selector: Option<String>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underlined: Option<bool>,
+    pub strikethrough: Option<bool>,
+    pub obfuscated: Option<bool>,
+    pub color: Option<String>,
+    pub insertion: Option<String>,
+    pub clickEvent: Option<ClickEvent>,
+    pub hoverEvent: Option<HoverEvent>,
+    pub extra: Option<Vec<ChatComponent>>
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct ChatScore {
+    pub name: String,
+    pub objective: String,
+    pub value: Option<String>
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct ClickEvent {
+    pub action: String,
+    pub value: String
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct HoverEvent {
+    pub action: String,
+    pub value: String
+}
+
+impl Chat {
+    pub fn from_bytes(data: &[u8]) -> Result<(Chat, usize), Error> {
+        let string_data = generalized::string_from_bytes(data)?;
+        return Ok((Self::from_string(string_data.0)?, string_data.1));
+    }
+    pub fn from_reader<R: std::io::Read>(read: &mut R) -> Result<Chat, Error> {
+        return Self::from_string(generalized::string_from_reader(read)?);
+    }
+    pub fn from_string(data: String) -> Result<Chat, Error> {
+        let structure: serde_json::Value = serde_json::from_str(&data)?;
+        if structure.is_object() {
+            return Ok(Chat {
+                component: serde_json::from_str(&data)?
+            });
+        }
+        else if structure.is_array() {
+            return Ok(Chat {
+                component: ChatComponent {
+                    text: None,
+                    translate: None,
+                    keybind: None,
+                    score: None,
+                    selector: None,
+                    bold: None,
+                    italic: None,
+                    underlined: None,
+                    strikethrough: None,
+                    obfuscated: None,
+                    color: None,
+                    insertion: None,
+                    clickEvent: None,
+                    hoverEvent: None,
+                    extra: serde_json::from_str(&data)?
+                }
+            });
+        }
+        else if structure.is_string() {
+            return Ok(Chat {
+                component: ChatComponent {
+                    text: serde_json::from_str(&data)?,
+                    translate: None,
+                    keybind: None,
+                    score: None,
+                    selector: None,
+                    bold: None,
+                    italic: None,
+                    underlined: None,
+                    strikethrough: None,
+                    obfuscated: None,
+                    color: None,
+                    insertion: None,
+                    clickEvent: None,
+                    hoverEvent: None,
+                    extra: None
+                }
+            });
+        }
+        else {
+            return Err(Error::InvalidJsonRoot);
+        }
+    }
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        return generalized::string_to_bytes(serde_json::to_string(&self.component)?);
+    }
+    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
+        generalized::string_to_writer(writer, serde_json::to_string(&self.component)?)?;
+        return Ok(());
+    }
+    pub fn to_string(self) -> Result<String, Error> {
+        return Ok(serde_json::to_string(&self.component)?);
+    }
+}
+
 
 /// Provides tools for reading, writing, and managing the various enums that Minecraft uses.
 /// Many of these enums contain descriptions of their respective attributes in quotes. This
@@ -136,14 +265,37 @@ pub mod enums {
             }
         }
     }
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(i32)]
+    /// Indicates what state to switch to to choose the right section of the protocol.
+    pub enum NextState {
+        /// Switch to the Status state. (used for the server list)
+        Status = 1,
+        /// Switch to the Login state.
+        Login = 2
+    }
+    impl TryFrom<crate::VarInt> for NextState {
+        type Error = Error;
+        fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+            match value {
+                x if x == crate::VarInt::from_value(NextState::Login as i32)? => Ok(NextState::Login),
+                x if x == crate::VarInt::from_value(NextState::Status as i32)? => Ok(NextState::Status),
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
 
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     #[repr(u8)]
     /// Indicates the current section of the network protocol to use.
     pub enum ProtocolState {
+        /// The Handshake state is used to confirm connection and choose the next state.
         Handshake = 0,
+        /// The Status state is for getting information for use in the server list.
         Status = 1,
+        /// The Login state is for encrypting, compressing, and preparing for the Play state.
         Login = 2,
+        /// The Play state is for standard gameplay.
         Play = 3
     }
     impl TryFrom<u8> for ProtocolState {
