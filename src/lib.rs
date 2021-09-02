@@ -37,7 +37,9 @@ pub enum Error {
     /// An error occured parsing JSON data using `serde_json`.
     JsonParsingError(serde_json::Error),
     /// A JSON tag had a weird root structure.
-    InvalidJsonRoot
+    InvalidJsonRoot,
+    /// A UUID consited of characters other than 0-f
+    InvalidUUID(std::num::ParseIntError)
 }
 
 impl std::fmt::Display for Error {
@@ -52,38 +54,140 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+impl From<std::num::ParseIntError> for Error {
+    fn from(e: std::num::ParseIntError) -> Error {
+        return Error::InvalidUUID(e);
+    }
+}
+
 impl std::error::Error for Error {}
+
+/// Represents a Unique User ID. Used to track players and entities.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct UUID {
+    /// The value of this UUID
+    value: u128
+}
+
+impl UUID {
+    /// Generates a UUID from a Read type.
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<UUID, Error> {
+        return Ok(Self::from_bytes(&[read_byte(reader)?; 16])?.0);
+    }
+    /// Generates a UUID from a byte array. Returns the UUID and amount of bytes needed.
+    pub fn from_bytes(data: &[u8]) -> Result<(UUID, usize), Error> {
+        if data.len() < 16 {
+            return Err(Error::MissingData);
+        }
+        let mut array = [0;16];
+        for i in 0..16 {
+            array[i] = data[i];
+        }
+        return Ok((Self::from_value(u128::from_be_bytes(array))?, 16));
+    }
+    /// Generates a UUID from a given value.
+    pub fn from_value(value: u128) -> Result<UUID, Error> {
+        return Ok(UUID { value });
+    }
+    /// Generates a UUID from a username. This function uses Mojang's API, and may be subject to
+    /// rate limiting. Cache your results.
+    pub fn from_username(username: String) -> Result<UUID, Error> {
+        use reqwest::blocking::get;
+        let raw_response = get(format!("https://api.mojang.com/users/profiles/minecraft/{}", username)).unwrap().text().unwrap();
+        let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
+        return Self::from_value(u128::from_str_radix(&json_response["id"].as_str().ok_or(Error::InvalidJsonRoot)?, 16)?);
+    }
+    /// Writes this UUID to a Write type.
+    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
+        match writer.write_all(&self.value.to_be_bytes()) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+        return Ok(());
+    }
+    /// Creates a byte array with the data of this UUID in it.
+    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
+        return Ok(self.value.to_be_bytes().to_vec());
+    }
+    /// Gives the underlying value of this UUID.
+    pub fn to_value(self) -> Result<u128, Error> {
+        return Ok(self.value);
+    }
+    /// Gives the username associated with this UUID. This function uses Mojang's API, and may be
+    /// subject to rate limiting. Cache your results.
+    pub fn to_username(self) -> Result<String, Error> {
+        use reqwest::blocking::get;
+        let mut insertable = format!("{:x}", self.value);
+        insertable = insertable.split('x').next_back().unwrap().to_string();
+        while insertable.len() < 32 {
+            insertable = String::from("0") + &insertable;
+        }
+        let raw_response = get(format!("https://api.mojang.com/user/profiles/{}/names", insertable)).unwrap().text().unwrap();
+        let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
+        if json_response.is_array() {
+            let json_response = json_response.as_array().unwrap();
+            return Ok(json_response[json_response.len() - 1]["name"].as_str().ok_or(Error::InvalidJsonRoot)?.to_string());
+        }
+        else {
+            return Err(Error::InvalidJsonRoot);
+        }
+    }
+}
 
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+/// Represents a chat message or other form of rich text.
 pub struct Chat {
     component: ChatComponent
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[allow(non_snake_case)]
+/// Represents one component of a Chat object.
 pub struct ChatComponent {
+    /// Text to be used.
     pub text: Option<String>,
+    /// Translation key to be used.
     pub translate: Option<String>,
+    /// Key to use the translated keybind for.
     pub keybind: Option<String>,
+    /// Scoreboard to use.
     pub score: Option<ChatScore>,
+    /// Selector to use with `score`.
     pub selector: Option<String>,
+    /// Declares if the text is bold.
     pub bold: Option<bool>,
+    /// Declares if the text is italic.
     pub italic: Option<bool>,
+    /// Declares if the text is underlined.
     pub underlined: Option<bool>,
+    /// Declares if the text has a strikethrough applied to it.
     pub strikethrough: Option<bool>,
+    /// Declares if the text is obfuscated.
     pub obfuscated: Option<bool>,
+    /// Declares the color of the text.
     pub color: Option<String>,
+    /// Declares text to insert into the client's chat when clicked.
     pub insertion: Option<String>,
+    /// Defines an event when this text is clicked.
     pub clickEvent: Option<ClickEvent>,
+    /// Defines an event when a client is hovering over this text.
     pub hoverEvent: Option<HoverEvent>,
+    /// Declares extra components to add aftr this one.
     pub extra: Option<Vec<ChatComponent>>
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+/// Describes details about a scoreboard.
 pub struct ChatScore {
+    /// Name of the given scoreboard.
     pub name: String,
+    /// Objective of the given scoreboard.
     pub objective: String,
+    /// Value to assign to the given scoreboard.
     pub value: Option<String>
 }
 
@@ -1978,6 +2082,14 @@ mod test {
         assert_eq!(zeroed.to_bytes()?, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         assert_eq!(max_value.to_bytes()?, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
         assert_eq!(min_value.to_bytes()?, [0x00, 0x00, 0x06, 0x00, 0x00, 0x01, 0x80, 0x0E]);
+        return Ok(());
+    }
+    #[test]
+    fn username_api() -> Result<(), super::Error> {
+        use super::UUID;
+        let uuid = UUID::from_username(String::from("thisjaiden"))?;
+        assert_eq!(uuid.clone().to_value()?, 0x09773765901b4da1a1243467f482b8b3);
+        assert_eq!(uuid.to_username()?, String::from("thisjaiden"));
         return Ok(());
     }
 }

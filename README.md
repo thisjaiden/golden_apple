@@ -23,7 +23,7 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] NBT  
 - [X] Position
 - [X] Angle
-- [ ] UUID
+- [X] UUID
 - [ ] Enums  
   Partial Support
   
