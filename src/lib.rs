@@ -5,11 +5,13 @@
 //! # Goals
 //! - Provide a generalized format for sharing and using Minecraft's data types
 //! - Simplify the decoding and encoding of network data
+//! - Abstract away enums usually passed as numbers
 //!
 //! # Usage
 //! Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top
-//! level crate. Types that can be fully represented in Rust have encoders/decoders under
-//! `golden_apple::generalized`, in case it isn't striaghtforward to do so.
+//! level module. Types that can be fully represented in Rust have encoders/decoders under
+//! `golden_apple::generalized`, in case it isn't striaghtforward to do so. All enums are under
+//! the `golden_apple::enums` module.
 
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
@@ -285,6 +287,219 @@ pub mod enums {
     use std::convert::TryFrom;
 
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    #[repr(i32)]
+    /// Represents a non-block thing in the world.
+    pub enum EntityType {
+        AreaEffectCloud = 0,
+        ArmorStand = 1,
+        Arrow = 2,
+        Axolotl = 3,
+        Bat = 4,
+        Bee = 5,
+        Blaze = 6,
+        Boat = 7,
+        Cat = 8,
+        CaveSpider = 9,
+        Chicken = 10,
+        Cod = 11,
+        Cow = 12,
+        Creeper = 13,
+        Dolphin = 14,
+        Donkey = 15,
+        DragonFireball = 16,
+        Drowned = 17,
+        ElderGuardian = 18,
+        EndCrystal = 19,
+        EnderDragon = 20,
+        Enderman = 21,
+        Endermite = 22,
+        Evoker = 23,
+        EvokerFangs = 24,
+        ExperienceOrb = 25,
+        EyeOfEnder = 26,
+        FallingBlock = 27,
+        FireworkRocket = 28,
+        Fox = 29,
+        Ghast = 30,
+        Giant = 31,
+        GlowItemFrame = 32,
+        GlowSquid = 33,
+        Goat = 34,
+        Guardian = 35,
+        Hoglin = 36,
+        Horse = 37,
+        Husk = 38,
+        Illusioner = 39,
+        IronGolem = 40,
+        Item = 41,
+        ItemFrame = 42,
+        Fireball = 43,
+        LeashKnot = 44,
+        LightningBolt = 45,
+        Llama = 46,
+        LlamaSpit = 47,
+        MagmaCube = 48,
+        Marker = 49,
+        Minecart = 50,
+        MinecartChest = 51,
+        MinecartCommandBlock = 52,
+        MinecartFurnace = 53,
+        MinecartHopper = 54,
+        MinecartSpawner = 55,
+        MinecartTNT = 56,
+        Mule = 57,
+        Mooshroom = 58,
+        Ocelot = 59,
+        Painting = 60,
+        Panda = 61,
+        Parrot = 62,
+        Phantom = 63,
+        Pig = 64,
+        Piglin = 65,
+        PiglinBrute = 66,
+        Pillager = 67,
+        PolarBear = 68,
+        PrimedTNT = 69,
+        Pufferfish = 70,
+        Rabbit = 71,
+        Ravager = 72,
+        Salmon = 73,
+        Sheep = 74,
+        Shulker = 75,
+        ShulkerBullet = 76,
+        Silverfish = 77,
+        Skeleton = 78,
+        SkeletonHorse = 79,
+        Slime = 80,
+        SmallFireball = 81,
+        SnowGolem = 82,
+        Snowball = 83,
+        SpectralArrow = 84,
+        Spider = 85,
+        Squid = 86,
+        Stray = 87,
+        Strider = 88,
+        ThrownEgg = 89,
+        ThrownEnderPearl = 90,
+        ThrownExperienceBottle = 91,
+        ThrownPotion = 92,
+        ThrownTrident = 93,
+        TraderLlama = 94,
+        TropicalFish = 95,
+        Turtle = 96,
+        Vex = 97,
+        Villager = 98,
+        Vindicator = 99,
+        WanderingTrader = 100,
+        Witch = 101,
+        Wither = 102,
+        WitherSkeleton = 103,
+        WitherSkull = 104,
+        Wolf = 105,
+        Zoglin = 106,
+        Zombie = 107,
+        ZombieHorse = 108,
+        ZombieVillager = 109,
+        ZombifiedPiglin = 110,
+        Player = 111,
+        FishingHook = 112
+    }
+    impl TryFrom<crate::VarInt> for EntityType {
+        type Error = Error;
+        fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+            use crate::VarInt;
+            match value {
+                x if x == VarInt::from_value(EntityType::AreaEffectCloud as i32)? => Ok(EntityType::AreaEffectCloud),
+                x if x == VarInt::from_value(EntityType::ArmorStand as i32)? => Ok(EntityType::ArmorStand),
+                x if x == VarInt::from_value(EntityType::Arrow as i32)? => Ok(EntityType::Arrow),
+                x if x == VarInt::from_value(EntityType::Axolotl as i32)? => Ok(EntityType::Axolotl),
+                x if x == VarInt::from_value(EntityType::Bat as i32)? => Ok(EntityType::Bat),
+                x if x == VarInt::from_value(EntityType::Bee as i32)? => Ok(EntityType::Bee),
+                x if x == VarInt::from_value(EntityType::Blaze as i32)? => Ok(EntityType::Blaze),
+                x if x == VarInt::from_value(EntityType::Boat as i32)? => Ok(EntityType::Boat),
+                x if x == VarInt::from_value(EntityType::Cat as i32)? => Ok(EntityType::Cat),
+                x if x == VarInt::from_value(EntityType::CaveSpider as i32)? => Ok(EntityType::CaveSpider),
+                x if x == VarInt::from_value(EntityType::Chicken as i32)? => Ok(EntityType::Chicken),
+                x if x == VarInt::from_value(EntityType::Cod as i32)? => Ok(EntityType::Cod),
+                x if x == VarInt::from_value(EntityType::Cow as i32)? => Ok(EntityType::Cow),
+                x if x == VarInt::from_value(EntityType::Creeper as i32)? => Ok(EntityType::Creeper),
+                x if x == VarInt::from_value(EntityType::Dolphin as i32)? => Ok(EntityType::Dolphin),
+                x if x == VarInt::from_value(EntityType::Donkey as i32)? => Ok(EntityType::Donkey),
+                x if x == VarInt::from_value(EntityType::DragonFireball as i32)? => Ok(EntityType::DragonFireball),
+                x if x == VarInt::from_value(EntityType::Drowned as i32)? => Ok(EntityType::Drowned),
+                x if x == VarInt::from_value(EntityType::ElderGuardian as i32)? => Ok(EntityType::ElderGuardian),
+                x if x == VarInt::from_value(EntityType::EndCrystal as i32)? => Ok(EntityType::EndCrystal),
+                x if x == VarInt::from_value(EntityType::EnderDragon as i32)? => Ok(EntityType::EnderDragon),
+                x if x == VarInt::from_value(EntityType::Enderman as i32)? => Ok(EntityType::Enderman),
+                x if x == VarInt::from_value(EntityType::Endermite as i32)? => Ok(EntityType::Endermite),
+                x if x == VarInt::from_value(EntityType::Evoker as i32)? => Ok(EntityType::Evoker),
+                x if x == VarInt::from_value(EntityType::EvokerFangs as i32)? => Ok(EntityType::EvokerFangs),
+                x if x == VarInt::from_value(EntityType::ExperienceOrb as i32)? => Ok(EntityType::ExperienceOrb),
+                x if x == VarInt::from_value(EntityType::EyeOfEnder as i32)? => Ok(EntityType::EyeOfEnder),
+                x if x == VarInt::from_value(EntityType::FallingBlock as i32)? => Ok(EntityType::FallingBlock),
+                x if x == VarInt::from_value(EntityType::FireworkRocket as i32)? => Ok(EntityType::FireworkRocket),
+                x if x == VarInt::from_value(EntityType::Fox as i32)? => Ok(EntityType::Fox),
+                x if x == VarInt::from_value(EntityType::Ghast as i32)? => Ok(EntityType::Ghast),
+                x if x == VarInt::from_value(EntityType::Giant as i32)? => Ok(EntityType::Giant),
+                x if x == VarInt::from_value(EntityType::GlowItemFrame as i32)? => Ok(EntityType::GlowItemFrame),
+                x if x == VarInt::from_value(EntityType::GlowSquid as i32)? => Ok(EntityType::GlowSquid),
+                x if x == VarInt::from_value(EntityType::Goat as i32)? => Ok(EntityType::Goat),
+                x if x == VarInt::from_value(EntityType::Guardian as i32)? => Ok(EntityType::Guardian),
+                x if x == VarInt::from_value(EntityType::Hoglin as i32)? => Ok(EntityType::Hoglin),
+                x if x == VarInt::from_value(EntityType::Horse as i32)? => Ok(EntityType::Horse),
+                x if x == VarInt::from_value(EntityType::Husk as i32)? => Ok(EntityType::Husk),
+                x if x == VarInt::from_value(EntityType::Illusioner as i32)? => Ok(EntityType::Illusioner),
+                x if x == VarInt::from_value(EntityType::IronGolem as i32)? => Ok(EntityType::IronGolem),
+                x if x == VarInt::from_value(EntityType::Item as i32)? => Ok(EntityType::Item),
+                x if x == VarInt::from_value(EntityType::ItemFrame as i32)? => Ok(EntityType::ItemFrame),
+                x if x == VarInt::from_value(EntityType::Fireball as i32)? => Ok(EntityType::Fireball),
+                x if x == VarInt::from_value(EntityType::LeashKnot as i32)? => Ok(EntityType::LeashKnot),
+                x if x == VarInt::from_value(EntityType::LightningBolt as i32)? => Ok(EntityType::LightningBolt),
+                x if x == VarInt::from_value(EntityType::Llama as i32)? => Ok(EntityType::Llama),
+                x if x == VarInt::from_value(EntityType::LlamaSpit as i32)? => Ok(EntityType::LlamaSpit),
+                x if x == VarInt::from_value(EntityType::MagmaCube as i32)? => Ok(EntityType::MagmaCube),
+                x if x == VarInt::from_value(EntityType::Marker as i32)? => Ok(EntityType::Marker),
+                x if x == VarInt::from_value(EntityType::Minecart as i32)? => Ok(EntityType::Minecart),
+                x if x == VarInt::from_value(EntityType::MinecartChest as i32)? => Ok(EntityType::MinecartChest),
+                x if x == VarInt::from_value(EntityType::MinecartCommandBlock as i32)? => Ok(EntityType::MinecartCommandBlock),
+                x if x == VarInt::from_value(EntityType::MinecartFurnace as i32)? => Ok(EntityType::MinecartFurnace),
+                x if x == VarInt::from_value(EntityType::MinecartHopper as i32)? => Ok(EntityType::MinecartHopper),
+                x if x == VarInt::from_value(EntityType::MinecartSpawner as i32)? => Ok(EntityType::MinecartSpawner),
+                x if x == VarInt::from_value(EntityType::MinecartTNT as i32)? => Ok(EntityType::MinecartTNT),
+                x if x == VarInt::from_value(EntityType::Mule as i32)? => Ok(EntityType::Mule),
+                x if x == VarInt::from_value(EntityType::Mooshroom as i32)? => Ok(EntityType::Mooshroom),
+                x if x == VarInt::from_value(EntityType::Ocelot as i32)? => Ok(EntityType::Ocelot),
+                x if x == VarInt::from_value(EntityType::Painting as i32)? => Ok(EntityType::Painting),
+                x if x == VarInt::from_value(EntityType::Panda as i32)? => Ok(EntityType::Panda),
+                x if x == VarInt::from_value(EntityType::Parrot as i32)? => Ok(EntityType::Parrot),
+                x if x == VarInt::from_value(EntityType::Phantom as i32)? => Ok(EntityType::Phantom),
+                x if x == VarInt::from_value(EntityType::Pig as i32)? => Ok(EntityType::Pig),
+                x if x == VarInt::from_value(EntityType::Piglin as i32)? => Ok(EntityType::Piglin),
+                x if x == VarInt::from_value(EntityType::PiglinBrute as i32)? => Ok(EntityType::PiglinBrute),
+                x if x == VarInt::from_value(EntityType::Pillager as i32)? => Ok(EntityType::Pillager),
+                x if x == VarInt::from_value(EntityType::PolarBear as i32)? => Ok(EntityType::PolarBear),
+                x if x == VarInt::from_value(EntityType::PrimedTNT as i32)? => Ok(EntityType::PrimedTNT),
+                x if x == VarInt::from_value(EntityType::Pufferfish as i32)? => Ok(EntityType::Pufferfish),
+                x if x == VarInt::from_value(EntityType::Rabbit as i32)? => Ok(EntityType::Rabbit),
+                x if x == VarInt::from_value(EntityType::Ravager as i32)? => Ok(EntityType::Ravager),
+                x if x == VarInt::from_value(EntityType::Salmon as i32)? => Ok(EntityType::Salmon),
+                x if x == VarInt::from_value(EntityType::Sheep as i32)? => Ok(EntityType::Sheep),
+                x if x == VarInt::from_value(EntityType::Shulker as i32)? => Ok(EntityType::Shulker),
+                x if x == VarInt::from_value(EntityType::ShulkerBullet as i32)? => Ok(EntityType::ShulkerBullet),
+                x if x == VarInt::from_value(EntityType::Silverfish as i32)? => Ok(EntityType::Silverfish),
+                x if x == VarInt::from_value(EntityType::Skeleton as i32)? => Ok(EntityType::Skeleton),
+                x if x == VarInt::from_value(EntityType::SkeletonHorse as i32)? => Ok(EntityType::SkeletonHorse),
+                x if x == VarInt::from_value(EntityType::Slime as i32)? => Ok(EntityType::Slime),
+                x if x == VarInt::from_value(EntityType::SmallFireball as i32)? => Ok(EntityType::SmallFireball),
+                x if x == VarInt::from_value(EntityType::SnowGolem as i32)? => Ok(EntityType::SnowGolem),
+
+
+                _ => Err(Error::EnumOutOfBound)
+            }
+        }
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     #[repr(u8)]
     /// Represents the level of chat messages a given client would like to receive.
     pub enum ChatSettings {
@@ -438,12 +653,16 @@ pub mod enums {
     /// Indicates which type of particle is being refrenced.
     pub enum ParticleType {
         AmbientEntityEffect = 0,
+        /// Angry villager particle.
         AngryVilalger = 1,
+        /// Barrier block particle.
         Barrier = 2,
+        /// Light block particle.
         Light = 3,
         Block = 4,
         Bubble = 5,
         Cloud = 6,
+        /// Critical strike particle.
         Crit = 7,
         DamageIndicator = 8,
         DragonBreath = 9,
@@ -737,342 +956,6 @@ pub mod enums {
                 }
             }
         }
-    }
-}
-
-/// Provides tools for reading, writing, and managing NBT types.
-pub mod nbt {
-    use super::{Error, read_byte};
-    /// Reads an entire NBT compound from a Read type.
-    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
-        if read_byte(reader)? != 0x0a {
-            return Err(Error::InvalidNBTHeader);
-        }
-        let root_name = named_tag_name_reader(reader)?;
-        let mut elements = vec![];
-        loop {
-            let next_tag = read_named_tag(reader)?;
-            match next_tag.tag {
-                Tag::End => {
-                    break;
-                }
-                _ => {
-                    elements.push(next_tag);
-                }
-            }
-        }
-        return Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) });
-    }
-    /// Converts an entire NBT compound into an array of bytes. This must be a full NBT compound.
-    pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
-        let mut final_bytes = vec![];
-        // Add start tag
-        final_bytes.push(0x0a);
-        // Add root tag name
-        for byte in root_tag.name.as_bytes() {
-            final_bytes.push(*byte);
-        }
-        // Add root tag components
-        if let Tag::Compound(cmptag) = root_tag.tag {
-            for tag in cmptag {
-                let prefix = tag.tag.clone().tag_prefix();
-                final_bytes.push(prefix);
-                if prefix == 0 {
-                    break;
-                }
-                let name = tag.name.as_bytes();
-                for byte in &(name.len() as u16).to_be_bytes() {
-                    final_bytes.push(*byte);
-                }
-                for byte in name {
-                    final_bytes.push(*byte);
-                }
-                for byte in tag.tag.write_to_bytes()? {
-                    final_bytes.push(byte);
-                }
-            }
-        }
-        else {
-            return Err(Error::InvalidRootTag);
-        }
-        // Add end tag
-        final_bytes.push(0x00);
-        return Ok(final_bytes);
-    }
-    fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
-        let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
-        let mut bytes = vec![];
-        for _ in 0..string_len {
-            bytes.push(read_byte(reader)?);
-        }
-        // This is required because Mojang uses Java's modified utf-8 which isn't supported here
-        unsafe {
-            let string = String::from_utf8_unchecked(bytes);
-            return Ok(string);
-        }
-    }
-    fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
-        let tag_type = read_byte(reader)?;
-        let tag_name;
-        if !(tag_type == 0x00) {
-            tag_name = named_tag_name_reader(reader)?;
-        }
-        else {
-            tag_name = String::from("N/A");
-        }
-        let tag_val = read_from_type(reader, tag_type)?;
-        return Ok(NamedTag { name: tag_name, tag: tag_val });
-    }
-    fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
-        let tag_type = read_byte(reader)?;
-        let tag_val = read_from_type(reader, tag_type)?;
-        return Ok(tag_val);
-    }
-    fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
-        match type_id {
-            0x00 => {
-                return Ok(Tag::End);
-            }
-            0x01 => {
-                return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?])));
-            }
-            0x02 => {
-                return Ok(Tag::Short(i16::from_be_bytes([read_byte(reader)?; 2])));
-            }
-            0x03 => {
-                return Ok(Tag::Int(i32::from_be_bytes([read_byte(reader)?; 4])));
-            }
-            0x04 => {
-                return Ok(Tag::Long(i64::from_be_bytes([read_byte(reader)?; 8])));
-            }
-            0x05 => {
-                return Ok(Tag::Float(f32::from_be_bytes([read_byte(reader)?; 4])));
-            }
-            0x06 => {
-                return Ok(Tag::Double(f64::from_be_bytes([read_byte(reader)?; 8])));
-            }
-            0x07 => {
-                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
-                let mut array = vec![];
-                for _ in 0..array_len {
-                    array.push(i8::from_be_bytes([read_byte(reader)?]));
-                }
-                return Ok(Tag::ByteArray(array));
-            }
-            0x08 => {
-                return Ok(Tag::String(named_tag_name_reader(reader)?));
-            }
-            0x09 => {
-                let _list_type = read_byte(reader)?;
-                let list_len = i32::from_be_bytes([read_byte(reader)?; 4]);
-                if list_len < 1 {
-                    return Ok(Tag::List(vec![Tag::End]));
-                }
-                let mut list_elements = vec![];
-                for _ in 0..list_len {
-                    list_elements.push(read_tag(reader)?);
-                }
-                return Ok(Tag::List(list_elements))
-            }
-            0x0A => {
-                let mut compound_elements = vec![];
-                loop {
-                    let tag = read_named_tag(reader)?;
-                    if tag.tag == Tag::End {
-                        break;
-                    }
-                    else {
-                        compound_elements.push(tag);
-                    }
-                }
-                return Ok(Tag::Compound(compound_elements));
-            }
-            0x0B => {
-                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
-                let mut array = vec![];
-                for _ in 0..array_len {
-                    array.push(i32::from_be_bytes([read_byte(reader)?; 4]));
-                }
-                return Ok(Tag::IntArray(array));
-            }
-            0x0C => {
-                let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
-                let mut array = vec![];
-                for _ in 0..array_len {
-                    array.push(i64::from_be_bytes([read_byte(reader)?; 8]));
-                }
-                return Ok(Tag::LongArray(array));
-            }
-            _ => {
-                return Err(Error::InvalidNBTType);
-            }
-        }
-    }
-    #[derive(PartialEq, Clone, Debug)]
-    /// Represents a value in a NBT structure.
-    pub enum Tag {
-        /// A signed byte.
-        Byte(i8),
-        /// A Java Short.
-        Short(i16),
-        /// A Java Int.
-        Int(i32),
-        /// A Java Long.
-        Long(i64),
-        /// A Java Float.
-        Float(f32),
-        /// A Java Double.
-        Double(f64),
-        /// An array of signed bytes.
-        ByteArray(Vec<i8>),
-        /// A Java modified UTF-8 string.
-        String(String),
-        /// A list type containing a list of tags without names. All tags will be of the same type.
-        List(Vec<Tag>),
-        /// A compound type containing a list of named tags.
-        Compound(Vec<NamedTag>),
-        /// An array of Java Ints.
-        IntArray(Vec<i32>),
-        /// An array of Java Longs.
-        LongArray(Vec<i64>),
-        /// Represents the end of a compound or list tag.
-        End
-    }
-    impl Tag {
-        fn tag_prefix(self) -> u8 {
-            match self {
-                Self::End => 0,
-                Self::Byte(_) => 1,
-                Self::Short(_) => 2,
-                Self::Int(_) => 3,
-                Self::Long(_) => 4,
-                Self::Float(_) => 5,
-                Self::Double(_) => 6,
-                Self::ByteArray(_) => 7,
-                Self::String(_) => 8,
-                Self::List(_) => 9,
-                Self::Compound(_) => 10,
-                Self::IntArray(_) => 11,
-                Self::LongArray(_) => 12
-            }
-        }
-        /// Writes this tag to a series of bytes. Does not include the tag's type ID prefix. Does
-        /// include list and compound tag's ending byte.
-        pub fn write_to_bytes(self) -> Result<Vec<u8>, Error> {
-            match self {
-                // The end tag has no data.
-                Self::End => return Ok(vec![]),
-                // It would be great to compact these as they use similar footprints, but the
-                // different data types prevent doing this practically.
-                Self::Byte(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::Short(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::Int(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::Long(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::Float(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::Double(data) => {
-                    return Ok(data.to_be_bytes().to_vec());
-                },
-                Self::ByteArray(data) => {
-                    let len_prefix = data.len() as i32;
-                    let mut final_data = vec![];
-                    for byte in &len_prefix.to_be_bytes() {
-                        final_data.push(*byte);
-                    }
-                    for byte in data {
-                        final_data.push(byte.to_be_bytes()[0]);
-                    }
-                    return Ok(final_data);
-                },
-                Self::IntArray(data) => {
-                    let len_prefix = data.len() as i32;
-                    let mut final_data = vec![];
-                    for byte in &len_prefix.to_be_bytes() {
-                        final_data.push(*byte);
-                    }
-                    for chunk in data {
-                        for byte in &chunk.to_be_bytes() {
-                            final_data.push(*byte);
-                        }
-                    }
-                    return Ok(final_data);
-                },
-                Self::LongArray(data) => {
-                    let len_prefix = data.len() as i32;
-                    let mut final_data = vec![];
-                    for byte in &len_prefix.to_be_bytes() {
-                        final_data.push(*byte);
-                    }
-                    for chunk in data {
-                        for byte in &chunk.to_be_bytes() {
-                            final_data.push(*byte);
-                        }
-                    }
-                    return Ok(final_data);
-                },
-                Self::String(data) => {
-                    let mut final_data = vec![];
-                    let strbytes = data.as_bytes();
-                    for byte in &(strbytes.len() as u16).to_be_bytes() {
-                        final_data.push(*byte);
-                    }
-                    for byte in strbytes {
-                        final_data.push(*byte);
-                    }
-                    return Ok(final_data);
-                },
-                Self::List(data) => {
-                    let mut final_data = vec![];
-                    final_data.push(data[0].clone().tag_prefix());
-                    for byte in &(data.len() as i32).to_be_bytes() {
-                        final_data.push(*byte);
-                    }
-                    for element in data {
-                        for byte in element.write_to_bytes()? {
-                            final_data.push(byte);
-                        }
-                    }
-                    final_data.push(0x00);
-                    return Ok(final_data);
-                },
-                Self::Compound(data) => {
-                    let mut final_data = vec![];
-                    for named_tag in data {
-                        final_data.push(named_tag.tag.clone().tag_prefix());
-                        let name_bytes = named_tag.name.as_bytes();
-                        for byte in &(name_bytes.len() as u16).to_be_bytes() {
-                            final_data.push(*byte);
-                        }
-                        for byte in name_bytes {
-                            final_data.push(*byte);
-                        }
-                        for byte in named_tag.tag.write_to_bytes()? {
-                            final_data.push(byte);
-                        }
-                    }
-                    final_data.push(0x00);
-                    return Ok(final_data);
-                }
-            }
-        }
-    }
-
-    #[derive(PartialEq, Clone, Debug)]
-    /// Represents a key-value pair in a NBT structure.
-    pub struct NamedTag {
-        /// Name of the given tag.
-        pub name: String,
-        /// Tag of this pair.
-        pub tag: Tag
     }
 }
 
@@ -2001,95 +1884,7 @@ fn read_byte<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
     }
 }
 
-mod test {
-    #[test]
-    fn varint_standard_values() -> Result<(), super::Error> {
-        use super::VarInt;
-        // Create the list of standard values
-        let val_0 = VarInt::from_value(0)?;
-        let val_1 = VarInt::from_value(1)?;
-        let val_largest_num = VarInt::from_value(2147483647)?;
-        let val_minus_one = VarInt::from_value(-1)?;
-        let val_smallest_num = VarInt::from_value(-2147483648)?;
-
-        // Check that the values are still the same
-        assert_eq!(val_0.value(), 0);
-        assert_eq!(val_1.value(), 1);
-        assert_eq!(val_largest_num.value(), 2147483647);
-        assert_eq!(val_minus_one.value(), -1);
-        assert_eq!(val_smallest_num.value(), -2147483648);
-
-        // Check that encoding works properly
-        assert_eq!(val_0.to_bytes()?, [0x00]);
-        assert_eq!(val_1.to_bytes()?, [0x01]);
-        assert_eq!(val_largest_num.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0x07]);
-        assert_eq!(val_minus_one.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0x0f]);
-        assert_eq!(val_smallest_num.to_bytes()?, [0x80, 0x80, 0x80, 0x80, 0x08]);
-
-        // Check that decoding works properly
-        assert_eq!(val_0.value(), VarInt::from_bytes(&[0x00])?.0.value());
-        assert_eq!(val_1.value(), VarInt::from_bytes(&[0x01])?.0.value());
-        assert_eq!(val_largest_num.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x07])?.0.value());
-        assert_eq!(val_minus_one.value(), VarInt::from_bytes(&[0xff, 0xff, 0xff, 0xff, 0x0f])?.0.value());
-        assert_eq!(val_smallest_num.value(), VarInt::from_bytes(&[0x80, 0x80, 0x80, 0x80, 0x08])?.0.value());
-        return Ok(());
-    }
-    #[test]
-    fn varlong_standard_values() -> Result<(), super::Error> {
-        use super::VarLong;
-        // Create the list of standard values
-        let val_0 = VarLong::from_value(0)?;
-        let val_1 = VarLong::from_value(1)?;
-        let val_largest_num = VarLong::from_value(9223372036854775807)?;
-        let val_minus_one = VarLong::from_value(-1)?;
-        let val_smallest_num = VarLong::from_value(-9223372036854775808)?;
-
-        // Check that the values are still the same
-        assert_eq!(val_0.value(), 0);
-        assert_eq!(val_1.value(), 1);
-        assert_eq!(val_largest_num.value(), 9223372036854775807);
-        assert_eq!(val_minus_one.value(), -1);
-        assert_eq!(val_smallest_num.value(), -9223372036854775808);
-
-        // Check that encoding works properly
-        assert_eq!(val_0.to_bytes()?, [0x00]);
-        assert_eq!(val_1.to_bytes()?, [0x01]);
-        assert_eq!(val_largest_num.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
-        assert_eq!(val_minus_one.to_bytes()?, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01]);
-        assert_eq!(val_smallest_num.to_bytes()?, [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01]);
-        return Ok(());
-    }
-    #[test]
-    fn position_standard_values() -> Result<(), super::Error> {
-        use super::Position;
-        // Create the list of standard values
-        let zeroed = Position::from_values(0, 0, 0);
-        let max_value = Position::from_values(i32::MAX, i16::MAX, i32::MAX);
-        let min_value = Position::from_values(i32::MIN, i16::MIN, i32::MIN);
-
-        // Check that the values are still the same
-        assert_eq!(zeroed.get_x(), 0);
-        assert_eq!(zeroed.get_y(), 0);
-        assert_eq!(zeroed.get_z(), 0);
-        assert_eq!(max_value.get_x(), i32::MAX);
-        assert_eq!(max_value.get_y(), i16::MAX);
-        assert_eq!(max_value.get_z(), i32::MAX);
-        assert_eq!(min_value.get_x(), i32::MIN);
-        assert_eq!(min_value.get_y(), i16::MIN);
-        assert_eq!(min_value.get_z(), i32::MIN);
-
-        // Check that encoding works properly
-        assert_eq!(zeroed.to_bytes()?, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        assert_eq!(max_value.to_bytes()?, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
-        assert_eq!(min_value.to_bytes()?, [0x00, 0x00, 0x06, 0x00, 0x00, 0x01, 0x80, 0x0E]);
-        return Ok(());
-    }
-    #[test]
-    fn username_api() -> Result<(), super::Error> {
-        use super::UUID;
-        let uuid = UUID::from_username(String::from("thisjaiden"))?;
-        assert_eq!(uuid.clone().to_value()?, 0x09773765901b4da1a1243467f482b8b3);
-        assert_eq!(uuid.to_username()?, String::from("thisjaiden"));
-        return Ok(());
-    }
-}
+/// Provides tools for reading, writing, and managing NBT types.
+pub mod nbt;
+// Unit testing module.
+mod test;
