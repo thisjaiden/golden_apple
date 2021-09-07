@@ -1,4 +1,5 @@
 use super::{Error, read_byte};
+
 /// Reads an entire NBT compound from a Read type.
 pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     if read_byte(reader)? != 0x0a {
@@ -19,6 +20,7 @@ pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> 
     }
     return Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) });
 }
+
 /// Converts an entire NBT compound into an array of bytes. This must be a full NBT compound.
 pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
     let mut final_bytes = vec![];
@@ -55,6 +57,7 @@ pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
     final_bytes.push(0x00);
     return Ok(final_bytes);
 }
+
 fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
     let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
     let mut bytes = vec![];
@@ -67,6 +70,7 @@ fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Err
         return Ok(string);
     }
 }
+
 fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_name;
@@ -79,11 +83,13 @@ fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     let tag_val = read_from_type(reader, tag_type)?;
     return Ok(NamedTag { name: tag_name, tag: tag_val });
 }
+
 fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_val = read_from_type(reader, tag_type)?;
     return Ok(tag_val);
 }
+
 fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
     match type_id {
         0x00 => {
@@ -164,6 +170,7 @@ fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, 
         }
     }
 }
+
 #[derive(PartialEq, Clone, Debug)]
 /// Represents a value in a NBT structure.
 pub enum Tag {
@@ -194,6 +201,7 @@ pub enum Tag {
     /// Represents the end of a compound or list tag.
     End
 }
+
 impl Tag {
     fn tag_prefix(self) -> u8 {
         match self {
