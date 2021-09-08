@@ -8,7 +8,74 @@ pub enum Snowy {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SaplingGrowthStage {
+    Stage0,
+    Stage1
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum FluidLevel {
+    Level0,
+    Level1,
+    Level2,
+    Level3,
+    Level4,
+    Level5,
+    Level6,
+    Level7,
+    Level8,
+    Level9,
+    Level10,
+    Level11,
+    Level12,
+    Level13,
+    Level14,
+    Level15
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Axis {
+    X,
+    Y,
+    Z
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LeafDistance {
+    Distance1,
+    Distance2,
+    Distance3,
+    Distance4,
+    Distance5,
+    Distance6,
+    Distance7
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LeafPersistence {
+    True,
+    False
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+    Up,
+    Down
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Triggered {
+    True,
+    False
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
+/// Represents a block. Not all blocks are implimented or supported yet.
 pub enum Block {
     Air,
     Stone,
@@ -22,6 +89,75 @@ pub enum Block {
     Dirt,
     CoarseDirt,
     Podzol(Snowy),
+    Cobblestone,
+    OakPlanks,
+    SprucePlanks,
+    BirchPlanks,
+    JunglePlanks,
+    AcaciaPlanks,
+    DarkOakPlanks,
+    OakSapling(SaplingGrowthStage),
+    SpruceSapling(SaplingGrowthStage),
+    BirchSapling(SaplingGrowthStage),
+    JungleSapling(SaplingGrowthStage),
+    AcaciaSapling(SaplingGrowthStage),
+    DarkOakSapling(SaplingGrowthStage),
+    Bedrock,
+    Water(FluidLevel),
+    Lava(FluidLevel),
+    Sand,
+    RedSand,
+    Gravel,
+    GoldOre,
+    DeepslateGoldOre,
+    IronOre,
+    DeepslateIronOre,
+    CoalOre,
+    DeepslateCoalOre,
+    NetherGoldOre,
+    OakLog(Axis),
+    SpruceLog(Axis),
+    BirchLog(Axis),
+    JungleLog(Axis),
+    AcaciaLog(Axis),
+    DarkOakLog(Axis),
+    StrippedSpruceLog(Axis),
+    StrippedBirchLog(Axis),
+    StrippedJungleLog(Axis),
+    StrippedAcaciaLog(Axis),
+    StrippedDarkOakLog(Axis),
+    StrippedOakLog(Axis),
+    OakWood(Axis),
+    SpruceWood(Axis),
+    BirchWood(Axis),
+    JungleWood(Axis),
+    AcaciaWood(Axis),
+    DarkOakWood(Axis),
+    StrippedOakWood(Axis),
+    StrippedSpruceWood(Axis),
+    StrippedBirchWood(Axis),
+    StrippedJungleWood(Axis),
+    StrippedAcaciaWood(Axis),
+    StrippedDarkOakWood(Axis),
+    OakLeaves(LeafDistance, LeafPersistence),
+    SpruceLeaves(LeafDistance, LeafPersistence),
+    BirchLeaves(LeafDistance, LeafPersistence),
+    JungleLeaves(LeafDistance, LeafPersistence),
+    AcaciaLeaves(LeafDistance, LeafPersistence),
+    DarkOakLeaves(LeafDistance, LeafPersistence),
+    AzaleaLeaves(LeafDistance, LeafPersistence),
+    FloweringAzaleaLeaves(LeafDistance, LeafPersistence),
+    Sponge,
+    WetSponge,
+    Glass,
+    LapisOre,
+    DeepslateLapisOre,
+    LapisBlock,
+    Dispenser(Direction, Triggered),
+    Sandstone,
+    ChiseledSandstone,
+    CutSandstone,
+    
 }
 
 impl Block {
@@ -42,8 +178,11 @@ impl Block {
                 }
                 VarInt::from_value(9)
             }
-            _ => Err(Error::EnumOutOfBound)
+            _ => todo!()
         }
+    }
+    pub fn as_namespaced_id(self) -> String {
+        todo!();
     }
 }
 
