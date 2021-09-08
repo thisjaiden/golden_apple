@@ -1,6 +1,56 @@
 use crate::Error;
 use std::convert::TryFrom;
 
+mod block;
+pub use block::Block;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(i32)]
+pub enum DiggingStatus {
+    StartDigging = 0,
+    CancelDigging = 1,
+    FinishDigging = 2
+}
+
+impl TryFrom<crate::VarInt> for DiggingStatus {
+    type Error = Error;
+    fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+        use crate::VarInt;
+        match value {
+            x if x == VarInt::from_value(Self::StartDigging as i32)? => Ok(Self::StartDigging),
+            x if x == VarInt::from_value(Self::CancelDigging as i32)? => Ok(Self::CancelDigging),
+            x if x == VarInt::from_value(Self::FinishDigging as i32)? => Ok(Self::FinishDigging),
+            _ => Err(Error::EnumOutOfBound)
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8)]
+pub enum Animation {
+    SwingMainArm = 0,
+    TakeDamage = 1,
+    LeaveBed = 2,
+    SwingOffhand = 3,
+    CriticalEffect = 4,
+    MagicCriticalEffect = 5
+}
+
+impl TryFrom<u8> for Animation {
+    type Error = Error;
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            x if x == Self::SwingMainArm as u8 => Ok(Self::SwingMainArm),
+            x if x == Self::TakeDamage as u8 => Ok(Self::TakeDamage),
+            x if x == Self::LeaveBed as u8 => Ok(Self::LeaveBed),
+            x if x == Self::SwingOffhand as u8 => Ok(Self::SwingOffhand),
+            x if x == Self::CriticalEffect as u8 => Ok(Self::CriticalEffect),
+            x if x == Self::MagicCriticalEffect as u8 => Ok(Self::MagicCriticalEffect),
+            _ => Err(Error::EnumOutOfBound)
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Represents the destination of a Skulk Vibration particle.
 pub enum SkulkVibrationDestination {
