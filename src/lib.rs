@@ -66,13 +66,13 @@ impl std::error::Error for Error {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StatusResponse {
-    version_name: String,
-    version_protocol: i64,
-    max_players: i64,
-    online_players: i64,
-    favicon_data: String,
-    sample_players: Vec<(String, UUID)>,
-    description: Chat
+    pub version_name: String,
+    pub version_protocol: i64,
+    pub max_players: i64,
+    pub online_players: i64,
+    pub favicon_data: String,
+    pub sample_players: Vec<(String, UUID)>,
+    pub description: Chat
 }
 
 impl StatusResponse {
