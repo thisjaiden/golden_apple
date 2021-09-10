@@ -64,6 +64,78 @@ impl From<std::num::ParseIntError> for Error {
 
 impl std::error::Error for Error {}
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct StatusResponse {
+    version_name: String,
+    version_protocol: i64,
+    max_players: i64,
+    online_players: i64,
+    favicon_data: String,
+    sample_players: Vec<(String, UUID)>,
+    description: Chat
+}
+
+impl StatusResponse {
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<StatusResponse, Error> {
+        let raw_data = generalized::string_from_reader(reader)?;
+        let json_data: serde_json::Value = serde_json::from_str(&raw_data)?;
+        return Ok(StatusResponse {
+            version_name: json_data["version"]["name"].to_string(),
+            version_protocol: json_data["version"]["protocol"].as_i64().ok_or(Error::InvalidJsonRoot)?,
+            max_players: json_data["players"]["max"].as_i64().ok_or(Error::InvalidJsonRoot)?,
+            online_players: json_data["players"]["online"].as_i64().ok_or(Error::InvalidJsonRoot)?,
+            description: Chat::from_string(serde_json::to_string(&json_data["description"])?)?,
+            favicon_data:
+                json_data["favicon"]
+                    .as_str()
+                    .ok_or(Error::InvalidJsonRoot)?
+                    .to_string()
+                    .trim_start_matches("data:image/png;base64,")
+                    .to_string(),
+            sample_players:
+                json_data["players"]["sample"]
+                    .as_array()
+                    .ok_or(Error::InvalidJsonRoot)
+                    .map(|dta| {
+                        let mut final_data = vec![];
+                        for pair in dta {
+                            final_data.push((pair["name"].to_string(), UUID::from_username(pair["id"].to_string()).unwrap()));
+                        }
+                        return final_data;
+                    })?
+        });
+    }
+    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
+        let mut string_data = String::new();
+        string_data += "{\"version\":{\"name\":\"";
+        string_data += &self.version_name;
+        string_data += "\",\"protocol\":";
+        string_data += &format!("{}", self.version_protocol);
+        string_data += "},\"players\":{\"max\":";
+        string_data += &format!("{}", self.max_players);
+        string_data += ",\"online\":";
+        string_data += &format!("{}", self.online_players);
+        string_data += "\"sample\":[";
+        let mut sample_index = false;
+        for player in self.sample_players.clone() {
+            if sample_index {
+                string_data += ",";
+            }
+            string_data += "{\"name\":\"";
+            string_data += &player.0;
+            string_data += "\",\"id\":\"";
+            string_data += &format!("{:x}", player.1.to_value()?);
+            string_data += "}";
+            sample_index = true;
+        }
+        string_data += "]},\"description\":";
+        string_data += ",\"favicon\":\"data:image/png;base64,";
+        string_data += &self.favicon_data;
+        string_data += "\"}";
+        generalized::string_to_writer(writer, string_data)
+    }
+}
+
 /// Represents a Unique User ID. Used to track players and entities.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UUID {
