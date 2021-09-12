@@ -4,6 +4,140 @@ use std::convert::TryFrom;
 mod block;
 pub use block::Block;
 
+mod item;
+pub use item::Item;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(i32)]
+pub enum StatisticID {
+    Block(Block),
+    Item(Item),
+    Entity(EntityType),
+    Custom(CustomStatistic)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(i32)]
+pub enum StatisticCateogry {
+    Mined = 0,
+    Crafted = 1,
+    Used = 2,
+    Broken = 3,
+    PickedUp = 4,
+    Dropped = 5,
+    Killed = 6,
+    KilledBy = 7,
+    Custom = 8
+}
+
+impl TryFrom<crate::VarInt> for StatisticCateogry {
+    type Error = Error;
+    fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+        use crate::VarInt;
+        match value {
+            x if x == VarInt::from_value(Self::Mined as i32)? => Ok(Self::Mined),
+            x if x == VarInt::from_value(Self::Crafted as i32)? => Ok(Self::Crafted),
+            x if x == VarInt::from_value(Self::Used as i32)? => Ok(Self::Used),
+            x if x == VarInt::from_value(Self::Broken as i32)? => Ok(Self::Broken),
+            x if x == VarInt::from_value(Self::PickedUp as i32)? => Ok(Self::PickedUp),
+            x if x == VarInt::from_value(Self::Dropped as i32)? => Ok(Self::Dropped),
+            x if x == VarInt::from_value(Self::Killed as i32)? => Ok(Self::Killed),
+            x if x == VarInt::from_value(Self::KilledBy as i32)? => Ok(Self::KilledBy),
+            x if x == VarInt::from_value(Self::Custom as i32)? => Ok(Self::Custom),
+            _ => Err(Error::EnumOutOfBound)
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(i32)]
+pub enum CustomStatistic {
+    LeaveGame = 0,
+    PlayOneMinute = 1,
+    TimeSinceDeath = 2,
+    TimeSinceRest = 3,
+    SneakTime = 4,
+    WalkOneCm = 5,
+    CrouchOneCm = 6,
+    SprintOneCm = 7,
+    WalkOnWaterOneCm = 8,
+    FallOneCm = 9,
+    ClimbOneCm = 10,
+    FlyOneCm = 11,
+    WalkUnderWaterOneCm = 12,
+    MinecartOneCm = 13,
+    BoatOneCm = 14,
+    PigOneCm = 15,
+    HorseOneCm = 16,
+    AviateOneCm = 17,
+    SwimOneCm = 18,
+    StriderOneCm = 19,
+    Jump = 20,
+    Drop = 21,
+    DamageDealt = 22,
+    DamageDealtAbsorbed = 23,
+    DamageDealtResisted = 24,
+    DamageTaken = 25,
+    DamageBlockedByShield = 26,
+    DamageAbsorbed = 27,
+    DamageResisted = 28,
+    Deaths = 29,
+    MobKills = 30,
+    AnimalsBred = 31,
+    PlayerKills = 32,
+    FishCaught = 33,
+    TalkedToVillager = 34,
+    TradedWithVillager = 35,
+    EatCakeSlice = 36,
+    FillCauldron = 37,
+    UseCauldron = 38,
+    CleanArmor = 39,
+    CleanBanner = 40,
+    CleanShulkerBox = 41,
+    InteractWithBrewingstand = 42,
+    InteractWithBeacon = 43,
+    InspectDropper = 44,
+    InspectHopper = 45,
+    InspectDispenser = 46,
+    PlayNoteblock = 47,
+    TuneNoteblock = 48,
+    PotFlower = 49,
+    TriggerTrappedChest = 50,
+    OpenEnderchest = 51,
+    EnchantItem = 52,
+    PlayRecord = 53,
+    InteractWithFurnace = 54,
+    InteractWithCraftingTable = 55,
+    OpenChest = 56,
+    SleepInBed = 57,
+    OpenShulkerBox = 58,
+    OpenBarrel = 59,
+    InteractWithBlastFurnace = 60,
+    InteractWithSmoker = 61,
+    InteractWithLectern = 62,
+    InteractWithCampfire = 63,
+    InteractWithCartographyTable = 64,
+    InteractWithLoom = 65,
+    InteractWithStonecutter = 66,
+    BellRing = 67,
+    RaidTrigger = 68,
+    RaidWin = 69,
+    InteractWithAnvil = 70,
+    InteractWithGrindstone = 71,
+    TargetHit = 72,
+    InteractWithSmithingTable = 73
+}
+
+impl TryFrom<crate::VarInt> for CustomStatistic {
+    type Error = Error;
+    fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+        use crate::VarInt;
+        match value {
+            _ => Err(Error::EnumOutOfBound)
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
 pub enum DiggingStatus {

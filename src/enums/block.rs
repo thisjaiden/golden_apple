@@ -161,7 +161,7 @@ pub enum Block {
 }
 
 impl Block {
-    pub fn to_value(self) -> Result<crate::VarInt, Error> {
+    pub fn to_blockstate_value(self) -> Result<crate::VarInt, Error> {
         use crate::VarInt;
         match self {
             Self::Air => VarInt::from_value(0),
@@ -181,18 +181,23 @@ impl Block {
             _ => todo!()
         }
     }
-    pub fn as_namespaced_id(self) -> String {
+    pub fn to_block_value(self) -> Result<crate::VarInt, Error> {
+        todo!();
+    }
+    pub fn to_blockstate_namespaced_id(self) -> String {
+        todo!();
+    }
+    pub fn to_block_namespaced_id(self) -> String {
         todo!();
     }
 }
 
-impl TryFrom<crate::VarInt> for Block {
-    type Error = Error;
-    fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+impl Block {
+    fn try_from_blockstate_value(value: crate::VarInt) -> Result<Self, Error> {
         todo!();
-        match value {
-            _ => Err(Error::EnumOutOfBound)
-        }
+    }
+    fn try_from_block_value(value: crate::VarInt) -> Result<Self, Error> {
+        todo!();
     }
 }
 
