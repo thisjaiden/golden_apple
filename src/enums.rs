@@ -2,31 +2,46 @@ use crate::Error;
 use std::convert::TryFrom;
 
 mod block;
-pub use block::Block;
+pub use block::*;
 
 mod item;
 pub use item::Item;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
+/// Represents what specific statistic id is being referenced.
 pub enum StatisticID {
+    /// This statistic references the block registry ids.
     Block(Block),
+    /// This statistic references the item registry ids.
     Item(Item),
+    /// This statistic references the entity registry ids.
     Entity(EntityType),
+    /// This statistic references the custom statistic registry ids.
     Custom(CustomStatistic)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
+/// Categorizes statstics into smaller groups.
 pub enum StatisticCateogry {
+    /// How many times this player has mined ___.
     Mined = 0,
+    /// How many times this player has crafted ___.
     Crafted = 1,
+    /// How many times this player has used ___.
     Used = 2,
+    /// How many times this player has broken ___.
     Broken = 3,
+    /// How many times this player has picked up ___.
     PickedUp = 4,
+    /// How many times this player has dropped ___.
     Dropped = 5,
+    /// How many times this player has killed ___.
     Killed = 6,
+    /// How many times this player has been killed by ___.
     KilledBy = 7,
+    /// Custom statistic.
     Custom = 8
 }
 
@@ -51,80 +66,155 @@ impl TryFrom<crate::VarInt> for StatisticCateogry {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
+/// Represents a custom statistic.
 pub enum CustomStatistic {
+    /// Amount of times this player has left the game.
     LeaveGame = 0,
+    /// Amount of minutes this player has played the game.
     PlayOneMinute = 1,
+    /// Amount of ticks since this player has died.
     TimeSinceDeath = 2,
+    /// Amount of ticks since this player has sept.
     TimeSinceRest = 3,
+    /// Amount of ticks this player has spent sneaking.
     SneakTime = 4,
+    /// Hundreths of blocks this player has walked.
     WalkOneCm = 5,
+    /// Hundreths of blocks this player has crouch walked.
     CrouchOneCm = 6,
+    /// Hundreths of blocks this player has sprinted.
     SprintOneCm = 7,
+    /// Hundreths of blocks this player has walked over water using frost walker boots.
     WalkOnWaterOneCm = 8,
+    /// Hundreths of blocks this player has fallen.
     FallOneCm = 9,
+    /// Hundreths of blocks this player has climbed.
     ClimbOneCm = 10,
+    /// Hundreths of blocks this player has flown.
     FlyOneCm = 11,
+    /// Hundreths of blocks this player has walked in water.
     WalkUnderWaterOneCm = 12,
+    /// Hundreths of blocks this player has travelled in a minecart.
     MinecartOneCm = 13,
+    /// Hundreths of blocks this player has rowwed in a boat.
     BoatOneCm = 14,
+    /// Hundreths of blocks this player has ridden on a pig.
     PigOneCm = 15,
+    /// Hundreths of blocks this player has ridden on a horse.
     HorseOneCm = 16,
+    /// Hundreths of blocks this player has levitated.
     AviateOneCm = 17,
+    /// Hundreths of blocks this player has swam.
     SwimOneCm = 18,
+    /// Hundreths of blocks this player has ridden on a strider.
     StriderOneCm = 19,
+    /// Number of times this player has jumped.
     Jump = 20,
+    /// Number of times this player has dropped an item.
     Drop = 21,
+    /// Tenths of hitpoints done by this player.
     DamageDealt = 22,
+    /// Tenths of hitpoints done by this player that were absorbed.
     DamageDealtAbsorbed = 23,
+    /// Tenths of hitpoints done by this player that were resisted.
     DamageDealtResisted = 24,
+    /// Tenths of hitpoints of damage taken by this player.
     DamageTaken = 25,
+    /// Tenths of hitpoints of damage this player has blocked with a shield.
     DamageBlockedByShield = 26,
+    /// Tenths of hitpoints of damage this player has absorbed.
     DamageAbsorbed = 27,
+    /// Tenths of hitpoints of damage this player has resisted.
     DamageResisted = 28,
+    /// Number of times this player has died.
     Deaths = 29,
+    /// Number of mobs this player has killed.
     MobKills = 30,
+    /// Number of animals this player has bred.
     AnimalsBred = 31,
+    /// Number of players this player has killed.
     PlayerKills = 32,
+    /// Number of fish this player has caught.
     FishCaught = 33,
+    /// Number of times this player has opened the villager GUI.
     TalkedToVillager = 34,
+    /// Number of times this player has traded with a villager.
     TradedWithVillager = 35,
+    /// Number of times this player has eaten a piece of cake.
     EatCakeSlice = 36,
+    /// Number of times this player has filled a cauldron.
     FillCauldron = 37,
+    /// Number of times this player has interacted with a cauldron.
     UseCauldron = 38,
+    /// Number of times this player has removed dye from leather armor.
     CleanArmor = 39,
+    /// Number of times this player has removed patterns from banners.
     CleanBanner = 40,
+    /// Number of times this player has removed dye from shulker boxes.
     CleanShulkerBox = 41,
+    /// Number of times this player has opened the brewing stand GUI.
     InteractWithBrewingstand = 42,
+    /// Number of times this player has opened the beacon GUI.
     InteractWithBeacon = 43,
+    /// Number of times this player has opened the dropper GUI.
     InspectDropper = 44,
+    /// Number of times this player has opened the hopper GUI.
     InspectHopper = 45,
+    /// Number of times this player has opened the dispenser GUI.
     InspectDispenser = 46,
+    /// Number of times this player has played a noteblock.
     PlayNoteblock = 47,
+    /// Number of times this player has changed the pitch of a noteblock.
     TuneNoteblock = 48,
+    /// Number of times this player has planted something in a flowerpot.
     PotFlower = 49,
+    /// Number of times this player has activated a trapped chest.
     TriggerTrappedChest = 50,
+    /// Number of times this player has opened the enderchest GUI.
     OpenEnderchest = 51,
+    /// Number of times this player has enchanted an item.
     EnchantItem = 52,
+    /// Number of times this player has played a music disk in a jukebox.
     PlayRecord = 53,
+    /// Number of times this player has opened the furnace GUI.
     InteractWithFurnace = 54,
+    /// Number of times this player has opened the crafting table GUI.
     InteractWithCraftingTable = 55,
+    /// Number of times this player has opened the chest GUI.
     OpenChest = 56,
+    /// Number of times this player has slept in a bed.
     SleepInBed = 57,
+    /// Number of times this player has opened the shulker box GUI.
     OpenShulkerBox = 58,
+    /// Number of times this player has opened the barrel GUI.
     OpenBarrel = 59,
+    /// Number of times this player has opened the blast furnace GUI.
     InteractWithBlastFurnace = 60,
+    /// Number of times this player has opened the smoker GUI.
     InteractWithSmoker = 61,
+    /// Number of times this player has placed or removed a book on a lectern.
     InteractWithLectern = 62,
+    /// Number of times this player has placed or removed an item on a campfire.
     InteractWithCampfire = 63,
+    /// Number of times this player has opened the cartography table GUI.
     InteractWithCartographyTable = 64,
+    /// Number of times this player has opened the loom GUI.
     InteractWithLoom = 65,
+    /// Number of times this player has opened the stonecutter GUI.
     InteractWithStonecutter = 66,
+    /// Number of times this player has rung a bell.
     BellRing = 67,
+    /// Number of times this player has caused a raid.
     RaidTrigger = 68,
+    /// Number of times this player has helped defeat a raid.
     RaidWin = 69,
+    /// Number of times this player has opened the anvil GUI.
     InteractWithAnvil = 70,
+    /// Number of times this player has opened the grindstone GUI.
     InteractWithGrindstone = 71,
+    /// Number of times this player has successfully hit a target block.
     TargetHit = 72,
+    /// Number of times this player has opened th smithing table GUI.
     InteractWithSmithingTable = 73
 }
 
@@ -133,6 +223,11 @@ impl TryFrom<crate::VarInt> for CustomStatistic {
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
         use crate::VarInt;
         match value {
+            x if x == VarInt::from_value(Self::LeaveGame as i32)? => Ok(Self::LeaveGame),
+            x if x == VarInt::from_value(Self::PlayOneMinute as i32)? => Ok(Self::PlayOneMinute),
+            x if x == VarInt::from_value(Self::TimeSinceDeath as i32)? => Ok(Self::TimeSinceDeath),
+            x if x == VarInt::from_value(Self::TimeSinceRest as i32)? => Ok(Self::TimeSinceRest),
+            x if x == VarInt::from_value(Self::SneakTime as i32)? => Ok(Self::SneakTime),
             _ => Err(Error::EnumOutOfBound)
         }
     }

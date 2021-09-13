@@ -29,6 +29,9 @@ impl Item {
 impl TryFrom<crate::VarInt> for Item {
     type Error = crate::Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+        match value {
+            _ => {}
+        }
         todo!();
     }
 }

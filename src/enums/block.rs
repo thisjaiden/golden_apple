@@ -1,5 +1,4 @@
 use crate::Error;
-use std::convert::TryFrom;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Snowy {
@@ -68,9 +67,84 @@ pub enum Direction {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Facing {
+    North,
+    South,
+    West,
+    East
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Occupied {
+    True,
+    False
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Part {
+    Head,
+    Foot
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Triggered {
     True,
     False
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Waterlogged {
+    True,
+    False
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Insturment {
+    Harp,
+    Basedrum,
+    Snare,
+    Hat,
+    Bass,
+    Flute,
+    Bell,
+    Guitar,
+    Chime,
+    Xylophone,
+    IronXylophone,
+    CowBell,
+    Didgeridoo,
+    Bit,
+    Banjo,
+    Pling
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Note {
+    Note0,
+    Note1,
+    Note2,
+    Note3,
+    Note4,
+    Note5,
+    Note6,
+    Note7,
+    Note8,
+    Note9,
+    Note10,
+    Note11,
+    Note12,
+    Note13,
+    Note14,
+    Note15,
+    Note16,
+    Note17,
+    Note18,
+    Note19,
+    Note20,
+    Note21,
+    Note22,
+    Note23,
+    Note24
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -157,7 +231,24 @@ pub enum Block {
     Sandstone,
     ChiseledSandstone,
     CutSandstone,
-    
+    NoteBlock(Insturment, Note, Triggered),
+    WhiteBed(Facing, Occupied, Part),
+    OrangeBed(Facing, Occupied, Part),
+    MagentaBed(Facing, Occupied, Part),
+    LightBlueBed(Facing, Occupied, Part),
+    YellowBed(Facing, Occupied, Part),
+    LimeBed(Facing, Occupied, Part),
+    PinkBed(Facing, Occupied, Part),
+    GrayBed(Facing, Occupied, Part),
+    LightGrayBed(Facing, Occupied, Part),
+    CyanBed(Facing, Occupied, Part),
+    PurpleBed(Facing, Occupied, Part),
+    BlueBed(Facing, Occupied, Part),
+    BrownBed(Facing, Occupied, Part),
+    GreenBed(Facing, Occupied, Part),
+    RedBed(Facing, Occupied, Part),
+    BlackBed(Facing, Occupied, Part),
+
 }
 
 impl Block {
@@ -190,14 +281,16 @@ impl Block {
     pub fn to_block_namespaced_id(self) -> String {
         todo!();
     }
-}
-
-impl Block {
-    fn try_from_blockstate_value(value: crate::VarInt) -> Result<Self, Error> {
+    pub fn try_from_blockstate_value(value: crate::VarInt) -> Result<Self, Error> {
+        match value {
+            _ => {}
+        }
         todo!();
     }
-    fn try_from_block_value(value: crate::VarInt) -> Result<Self, Error> {
+    pub fn try_from_block_value(value: crate::VarInt) -> Result<Self, Error> {
+        match value {
+            _ => {}
+        }
         todo!();
     }
 }
-
