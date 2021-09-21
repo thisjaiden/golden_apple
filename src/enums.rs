@@ -21,7 +21,7 @@ pub enum StatisticID {
     Custom(CustomStatistic)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Categorizes statstics into smaller groups.
 pub enum StatisticCateogry {
@@ -48,22 +48,11 @@ pub enum StatisticCateogry {
 impl TryFrom<crate::VarInt> for StatisticCateogry {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value.value() {
-            x if x == Self::Mined as i32 => Ok(Self::Mined),
-            x if x == Self::Crafted as i32 => Ok(Self::Crafted),
-            x if x == Self::Used as i32 => Ok(Self::Used),
-            x if x == Self::Broken as i32 => Ok(Self::Broken),
-            x if x == Self::PickedUp as i32 => Ok(Self::PickedUp),
-            x if x == Self::Dropped as i32 => Ok(Self::Dropped),
-            x if x == Self::Killed as i32 => Ok(Self::Killed),
-            x if x == Self::KilledBy as i32 => Ok(Self::KilledBy),
-            x if x == Self::Custom as i32 => Ok(Self::Custom),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Represents a custom statistic.
 pub enum CustomStatistic {
@@ -220,14 +209,7 @@ pub enum CustomStatistic {
 impl TryFrom<crate::VarInt> for CustomStatistic {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value.value() {
-            x if x == Self::LeaveGame as i32 => Ok(Self::LeaveGame),
-            x if x == Self::PlayOneMinute as i32 => Ok(Self::PlayOneMinute),
-            x if x == Self::TimeSinceDeath as i32 => Ok(Self::TimeSinceDeath),
-            x if x == Self::TimeSinceRest as i32 => Ok(Self::TimeSinceRest),
-            x if x == Self::SneakTime as i32 => Ok(Self::SneakTime),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
@@ -251,7 +233,7 @@ impl TryFrom<crate::VarInt> for DiggingStatus {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 pub enum Animation {
     SwingMainArm = 0,
@@ -265,15 +247,7 @@ pub enum Animation {
 impl TryFrom<u8> for Animation {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == Self::SwingMainArm as u8 => Ok(Self::SwingMainArm),
-            x if x == Self::TakeDamage as u8 => Ok(Self::TakeDamage),
-            x if x == Self::LeaveBed as u8 => Ok(Self::LeaveBed),
-            x if x == Self::SwingOffhand as u8 => Ok(Self::SwingOffhand),
-            x if x == Self::CriticalEffect as u8 => Ok(Self::CriticalEffect),
-            x if x == Self::MagicCriticalEffect as u8 => Ok(Self::MagicCriticalEffect),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 
@@ -286,7 +260,7 @@ pub enum SkulkVibrationDestination {
     EntityID(crate::VarInt)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Represents the type of a painting.
 pub enum PaintingType {
@@ -321,39 +295,11 @@ pub enum PaintingType {
 impl TryFrom<crate::VarInt> for PaintingType {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value.value() {
-            x if x == Self::Kebab as i32 => Ok(Self::Kebab),
-            x if x == Self::Aztec as i32 => Ok(Self::Aztec),
-            x if x == Self::Alban as i32 => Ok(Self::Alban),
-            x if x == Self::Aztec2 as i32 => Ok(Self::Aztec2),
-            x if x == Self::Bomb as i32 => Ok(Self::Bomb),
-            x if x == Self::Plant as i32 => Ok(Self::Plant),
-            x if x == Self::Wasteland as i32 => Ok(Self::Wasteland),
-            x if x == Self::Pool as i32 => Ok(Self::Pool),
-            x if x == Self::Courbert as i32 => Ok(Self::Courbert),
-            x if x == Self::Sea as i32 => Ok(Self::Sea),
-            x if x == Self::Sunset as i32 => Ok(Self::Sunset),
-            x if x == Self::Creebet as i32 => Ok(Self::Creebet),
-            x if x == Self::Wanderer as i32 => Ok(Self::Wanderer),
-            x if x == Self::Graham as i32 => Ok(Self::Graham),
-            x if x == Self::Match as i32 => Ok(Self::Match),
-            x if x == Self::Bust as i32 => Ok(Self::Bust),
-            x if x == Self::Stage as i32 => Ok(Self::Stage),
-            x if x == Self::Void as i32 => Ok(Self::Void),
-            x if x == Self::SkullAndRoses as i32 => Ok(Self::SkullAndRoses),
-            x if x == Self::Wither as i32 => Ok(Self::Wither),
-            x if x == Self::Fighters as i32 => Ok(Self::Fighters),
-            x if x == Self::Pointer as i32 => Ok(Self::Pointer),
-            x if x == Self::Pigscene as i32 => Ok(Self::Pigscene),
-            x if x == Self::BurningSkull as i32 => Ok(Self::BurningSkull),
-            x if x == Self::Skeleton as i32 => Ok(Self::Skeleton),
-            x if x == Self::DonkeyKong as i32 => Ok(Self::DonkeyKong),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 /// Represents the direction a painting is facing.
 pub enum PaintingDirection {
@@ -366,13 +312,7 @@ pub enum PaintingDirection {
 impl TryFrom<u8> for PaintingDirection {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == Self::South as u8 => Ok(Self::South),
-            x if x == Self::West as u8 => Ok(Self::West),
-            x if x == Self::North as u8 => Ok(Self::North),
-            x if x == Self::East as u8 => Ok(Self::East),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 
@@ -386,7 +326,7 @@ pub enum SpawnEntityData {
     EntityID(i32)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 pub enum MinecartFunctionality {
     Empty = 0,
@@ -396,6 +336,13 @@ pub enum MinecartFunctionality {
     Spawner = 4,
     Hopper = 5,
     CommandBlock = 6
+}
+
+impl TryFrom<crate::VarInt> for MinecartFunctionality {
+    type Error = Error;
+    fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -408,7 +355,7 @@ pub enum Orientation {
     East = 5
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Represents a non-block thing in the world.
 pub enum EntityType {
@@ -530,126 +477,11 @@ pub enum EntityType {
 impl TryFrom<crate::VarInt> for EntityType {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value.value() {
-            x if x == Self::AreaEffectCloud as i32 => Ok(Self::AreaEffectCloud),
-            x if x == Self::ArmorStand as i32 => Ok(Self::ArmorStand),
-            x if x == Self::Arrow as i32 => Ok(Self::Arrow),
-            x if x == Self::Axolotl as i32 => Ok(Self::Axolotl),
-            x if x == Self::Bat as i32 => Ok(Self::Bat),
-            x if x == Self::Bee as i32 => Ok(Self::Bee),
-            x if x == Self::Blaze as i32 => Ok(Self::Blaze),
-            x if x == Self::Boat as i32 => Ok(Self::Boat),
-            x if x == Self::Cat as i32 => Ok(Self::Cat),
-            x if x == Self::CaveSpider as i32 => Ok(Self::CaveSpider),
-            x if x == Self::Chicken as i32 => Ok(Self::Chicken),
-            x if x == Self::Cod as i32 => Ok(Self::Cod),
-            x if x == Self::Cow as i32 => Ok(Self::Cow),
-            x if x == Self::Creeper as i32 => Ok(Self::Creeper),
-            x if x == Self::Dolphin as i32 => Ok(Self::Dolphin),
-            x if x == Self::Donkey as i32 => Ok(Self::Donkey),
-            x if x == Self::DragonFireball as i32 => Ok(Self::DragonFireball),
-            x if x == Self::Drowned as i32 => Ok(Self::Drowned),
-            x if x == Self::ElderGuardian as i32 => Ok(Self::ElderGuardian),
-            x if x == Self::EndCrystal as i32 => Ok(Self::EndCrystal),
-            x if x == Self::EnderDragon as i32 => Ok(Self::EnderDragon),
-            x if x == Self::Enderman as i32 => Ok(Self::Enderman),
-            x if x == Self::Endermite as i32 => Ok(Self::Endermite),
-            x if x == Self::Evoker as i32 => Ok(Self::Evoker),
-            x if x == Self::EvokerFangs as i32 => Ok(Self::EvokerFangs),
-            x if x == Self::ExperienceOrb as i32 => Ok(Self::ExperienceOrb),
-            x if x == Self::EyeOfEnder as i32 => Ok(Self::EyeOfEnder),
-            x if x == Self::FallingBlock as i32 => Ok(Self::FallingBlock),
-            x if x == Self::FireworkRocket as i32 => Ok(Self::FireworkRocket),
-            x if x == Self::Fox as i32 => Ok(Self::Fox),
-            x if x == Self::Ghast as i32 => Ok(Self::Ghast),
-            x if x == Self::Giant as i32 => Ok(Self::Giant),
-            x if x == Self::GlowItemFrame as i32 => Ok(Self::GlowItemFrame),
-            x if x == Self::GlowSquid as i32 => Ok(Self::GlowSquid),
-            x if x == Self::Goat as i32 => Ok(Self::Goat),
-            x if x == Self::Guardian as i32 => Ok(Self::Guardian),
-            x if x == Self::Hoglin as i32 => Ok(Self::Hoglin),
-            x if x == Self::Horse as i32 => Ok(Self::Horse),
-            x if x == Self::Husk as i32 => Ok(Self::Husk),
-            x if x == Self::Illusioner as i32 => Ok(Self::Illusioner),
-            x if x == Self::IronGolem as i32 => Ok(Self::IronGolem),
-            x if x == Self::Item as i32 => Ok(Self::Item),
-            x if x == Self::ItemFrame as i32 => Ok(Self::ItemFrame),
-            x if x == Self::Fireball as i32 => Ok(Self::Fireball),
-            x if x == Self::LeashKnot as i32 => Ok(Self::LeashKnot),
-            x if x == Self::LightningBolt as i32 => Ok(Self::LightningBolt),
-            x if x == Self::Llama as i32 => Ok(Self::Llama),
-            x if x == Self::LlamaSpit as i32 => Ok(Self::LlamaSpit),
-            x if x == Self::MagmaCube as i32 => Ok(Self::MagmaCube),
-            x if x == Self::Marker as i32 => Ok(Self::Marker),
-            x if x == Self::Minecart as i32 => Ok(Self::Minecart),
-            x if x == Self::MinecartChest as i32 => Ok(Self::MinecartChest),
-            x if x == Self::MinecartCommandBlock as i32 => Ok(Self::MinecartCommandBlock),
-            x if x == Self::MinecartFurnace as i32 => Ok(Self::MinecartFurnace),
-            x if x == Self::MinecartHopper as i32 => Ok(Self::MinecartHopper),
-            x if x == Self::MinecartSpawner as i32 => Ok(Self::MinecartSpawner),
-            x if x == Self::MinecartTNT as i32 => Ok(Self::MinecartTNT),
-            x if x == Self::Mule as i32 => Ok(Self::Mule),
-            x if x == Self::Mooshroom as i32 => Ok(Self::Mooshroom),
-            x if x == Self::Ocelot as i32 => Ok(Self::Ocelot),
-            x if x == Self::Painting as i32 => Ok(Self::Painting),
-            x if x == Self::Panda as i32 => Ok(Self::Panda),
-            x if x == Self::Parrot as i32 => Ok(Self::Parrot),
-            x if x == Self::Phantom as i32 => Ok(Self::Phantom),
-            x if x == Self::Pig as i32 => Ok(Self::Pig),
-            x if x == Self::Piglin as i32 => Ok(Self::Piglin),
-            x if x == Self::PiglinBrute as i32 => Ok(Self::PiglinBrute),
-            x if x == Self::Pillager as i32 => Ok(Self::Pillager),
-            x if x == Self::PolarBear as i32 => Ok(Self::PolarBear),
-            x if x == Self::PrimedTNT as i32 => Ok(Self::PrimedTNT),
-            x if x == Self::Pufferfish as i32 => Ok(Self::Pufferfish),
-            x if x == Self::Rabbit as i32 => Ok(Self::Rabbit),
-            x if x == Self::Ravager as i32 => Ok(Self::Ravager),
-            x if x == Self::Salmon as i32 => Ok(Self::Salmon),
-            x if x == Self::Sheep as i32 => Ok(Self::Sheep),
-            x if x == Self::Shulker as i32 => Ok(Self::Shulker),
-            x if x == Self::ShulkerBullet as i32 => Ok(Self::ShulkerBullet),
-            x if x == Self::Silverfish as i32 => Ok(Self::Silverfish),
-            x if x == Self::Skeleton as i32 => Ok(Self::Skeleton),
-            x if x == Self::SkeletonHorse as i32 => Ok(Self::SkeletonHorse),
-            x if x == Self::Slime as i32 => Ok(Self::Slime),
-            x if x == Self::SmallFireball as i32 => Ok(Self::SmallFireball),
-            x if x == Self::SnowGolem as i32 => Ok(Self::SnowGolem),
-            x if x == Self::Snowball as i32 => Ok(Self::Snowball),
-            x if x == Self::SpectralArrow as i32 => Ok(Self::SpectralArrow),
-            x if x == Self::Spider as i32 => Ok(Self::Spider),
-            x if x == Self::Squid as i32 => Ok(Self::Squid),
-            x if x == Self::Stray as i32 => Ok(Self::Stray),
-            x if x == Self::Strider as i32 => Ok(Self::Strider),
-            x if x == Self::ThrownEgg as i32 => Ok(Self::ThrownEgg),
-            x if x == Self::ThrownEnderPearl as i32 => Ok(Self::ThrownEnderPearl),
-            x if x == Self::ThrownExperienceBottle as i32 => Ok(Self::ThrownExperienceBottle),
-            x if x == Self::ThrownPotion as i32 => Ok(Self::ThrownPotion),
-            x if x == Self::ThrownTrident as i32 => Ok(Self::ThrownTrident),
-            x if x == Self::TraderLlama as i32 => Ok(Self::TraderLlama),
-            x if x == Self::TropicalFish as i32 => Ok(Self::TropicalFish),
-            x if x == Self::Turtle as i32 => Ok(Self::Turtle),
-            x if x == Self::Vex as i32 => Ok(Self::Vex),
-            x if x == Self::Villager as i32 => Ok(Self::Villager),
-            x if x == Self::Vindicator as i32 => Ok(Self::Vindicator),
-            x if x == Self::WanderingTrader as i32 => Ok(Self::WanderingTrader),
-            x if x == Self::Witch as i32 => Ok(Self::Witch),
-            x if x == Self::Wither as i32 => Ok(Self::Wither),
-            x if x == Self::WitherSkeleton as i32 => Ok(Self::WitherSkeleton),
-            x if x == Self::WitherSkull as i32 => Ok(Self::WitherSkull),
-            x if x == Self::Wolf as i32 => Ok(Self::Wolf),
-            x if x == Self::Zoglin as i32 => Ok(Self::Zoglin),
-            x if x == Self::Zombie as i32 => Ok(Self::Zombie),
-            x if x == Self::ZombieHorse as i32 => Ok(Self::ZombieHorse),
-            x if x == Self::ZombieVillager as i32 => Ok(Self::ZombieVillager),
-            x if x == Self::ZombifiedPiglin as i32 => Ok(Self::ZombifiedPiglin),
-            x if x == Self::Player as i32 => Ok(Self::Player),
-            x if x == Self::FishingHook as i32 => Ok(Self::FishingHook),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 /// Represents the level of chat messages a given client would like to receive.
 pub enum ChatSettings {
@@ -666,16 +498,11 @@ pub enum ChatSettings {
 impl TryFrom<u8> for ChatSettings {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == ChatSettings::Full as u8 => Ok(ChatSettings::Full),
-            x if x == ChatSettings::System as u8 => Ok(ChatSettings::System),
-            x if x == ChatSettings::None as u8 => Ok(ChatSettings::None),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 /// Represents the type of chat message being sent.
 pub enum MessageType {
@@ -692,16 +519,11 @@ pub enum MessageType {
 impl TryFrom<u8> for MessageType {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == MessageType::Chat as u8 => Ok(MessageType::Chat),
-            x if x == MessageType::System as u8 => Ok(MessageType::System),
-            x if x == MessageType::GameInfo as u8 => Ok(MessageType::GameInfo),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Indicates what state to switch to to choose the right section of the protocol.
 pub enum NextState {
@@ -714,15 +536,11 @@ pub enum NextState {
 impl TryFrom<crate::VarInt> for NextState {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value {
-            x if x == crate::VarInt::from_value(NextState::Login as i32)? => Ok(NextState::Login),
-            x if x == crate::VarInt::from_value(NextState::Status as i32)? => Ok(NextState::Status),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 /// Indicates the current section of the network protocol to use.
 pub enum ProtocolState {
@@ -738,17 +556,11 @@ pub enum ProtocolState {
 impl TryFrom<u8> for ProtocolState {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == ProtocolState::Handshake as u8 => Ok(ProtocolState::Handshake),
-            x if x == ProtocolState::Status as u8 => Ok(ProtocolState::Status),
-            x if x == ProtocolState::Login as u8 => Ok(ProtocolState::Login),
-            x if x == ProtocolState::Play as u8 => Ok(ProtocolState::Play),
-             _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 /// Indicates which type of particle is being refrenced.
 pub enum ParticleType {
@@ -850,98 +662,7 @@ pub enum ParticleType {
 impl TryFrom<u8> for ParticleType {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            x if x == Self::AmbientEntityEffect as u8 => Ok(Self::AmbientEntityEffect),
-            x if x == Self::AngryVilalger as u8 => Ok(Self::AngryVilalger),
-            x if x == Self::Ash as u8 => Ok(Self::Ash),
-            x if x == Self::Barrier as u8 => Ok(Self::Barrier),
-            x if x == Self::Block as u8 => Ok(Self::Block),
-            x if x == Self::Bubble as u8 => Ok(Self::Bubble),
-            x if x == Self::BubbleColumnUp as u8 => Ok(Self::BubbleColumnUp),
-            x if x == Self::BubblePop as u8 => Ok(Self::BubblePop),
-            x if x == Self::CampfireCosySmoke as u8 => Ok(Self::CampfireCosySmoke),
-            x if x == Self::CampfireSignalSmoke as u8 => Ok(Self::CampfireSignalSmoke),
-            x if x == Self::Cloud as u8 => Ok(Self::Cloud),
-            x if x == Self::Composter as u8 => Ok(Self::Composter),
-            x if x == Self::CrimsonSpore as u8 => Ok(Self::CrimsonSpore),
-            x if x == Self::Crit as u8 => Ok(Self::Crit),
-            x if x == Self::CurrentDown as u8 => Ok(Self::CurrentDown),
-            x if x == Self::DamageIndicator as u8 => Ok(Self::DamageIndicator),
-            x if x == Self::Dolphin as u8 => Ok(Self::Dolphin),
-            x if x == Self::DragonBreath as u8 => Ok(Self::DragonBreath),
-            x if x == Self::DrippingDripstoneLava as u8 => Ok(Self::DrippingDripstoneLava),
-            x if x == Self::DrippingDripstoneWater as u8 => Ok(Self::DrippingDripstoneWater),
-            x if x == Self::DrippingHoney as u8 => Ok(Self::DrippingHoney),
-            x if x == Self::DrippingLava as u8 => Ok(Self::DrippingLava),
-            x if x == Self::DrippingObsidianTear as u8 => Ok(Self::DrippingObsidianTear),
-            x if x == Self::DrippingWater as u8 => Ok(Self::DrippingWater),
-            x if x == Self::Dust as u8 => Ok(Self::Dust),
-            x if x == Self::DustColorTransition as u8 => Ok(Self::DustColorTransition),
-            x if x == Self::Effect as u8 => Ok(Self::Effect),
-            x if x == Self::ElderGuardian as u8 => Ok(Self::ElderGuardian),
-            x if x == Self::ElectricSpark as u8 => Ok(Self::ElectricSpark),
-            x if x == Self::Enchant as u8 => Ok(Self::Enchant),
-            x if x == Self::EnchantedHit as u8 => Ok(Self::EnchantedHit),
-            x if x == Self::EndRod as u8 => Ok(Self::EndRod),
-            x if x == Self::EntityEffect as u8 => Ok(Self::EntityEffect),
-            x if x == Self::Explosion as u8 => Ok(Self::Explosion),
-            x if x == Self::ExplosionEmitter as u8 => Ok(Self::ExplosionEmitter),
-            x if x == Self::FallingDripstoneLava as u8 => Ok(Self::FallingDripstoneLava),
-            x if x == Self::FallingDripstoneWater as u8 => Ok(Self::FallingDripstoneWater),
-            x if x == Self::FallingDust as u8 => Ok(Self::FallingDust),
-            x if x == Self::FallingHoney as u8 => Ok(Self::FallingHoney),
-            x if x == Self::FallingLava as u8 => Ok(Self::FallingLava),
-            x if x == Self::FallingNectar as u8 => Ok(Self::FallingNectar),
-            x if x == Self::FallingObsidianTear as u8 => Ok(Self::FallingObsidianTear),
-            x if x == Self::FallingSporeBlossom as u8 => Ok(Self::FallingSporeBlossom),
-            x if x == Self::FallingWater as u8 => Ok(Self::FallingWater),
-            x if x == Self::Firework as u8 => Ok(Self::Firework),
-            x if x == Self::Fishing as u8 => Ok(Self::Fishing),
-            x if x == Self::Flame as u8 => Ok(Self::Flame),
-            x if x == Self::Flash as u8 => Ok(Self::Flash),
-            x if x == Self::Glow as u8 => Ok(Self::Glow),
-            x if x == Self::GlowSquidInk as u8 => Ok(Self::GlowSquidInk),
-            x if x == Self::HappyVillager as u8 => Ok(Self::HappyVillager),
-            x if x == Self::Heart as u8 => Ok(Self::Heart),
-            x if x == Self::InstantEffect as u8 => Ok(Self::InstantEffect),
-            x if x == Self::Item as u8 => Ok(Self::Item),
-            x if x == Self::ItemSlime as u8 => Ok(Self::ItemSlime),
-            x if x == Self::ItemSnowball as u8 => Ok(Self::ItemSnowball),
-            x if x == Self::LandingHoney as u8 => Ok(Self::LandingHoney),
-            x if x == Self::LandingLava as u8 => Ok(Self::LandingLava),
-            x if x == Self::LandingObsidianTear as u8 => Ok(Self::LandingObsidianTear),
-            x if x == Self::LargeSmoke as u8 => Ok(Self::LargeSmoke),
-            x if x == Self::Lava as u8 => Ok(Self::Lava),
-            x if x == Self::Light as u8 => Ok(Self::Light),
-            x if x == Self::Mycelium as u8 => Ok(Self::Mycelium),
-            x if x == Self::Nautilus as u8 => Ok(Self::Nautilus),
-            x if x == Self::Note as u8 => Ok(Self::Note),
-            x if x == Self::Poof as u8 => Ok(Self::Poof),
-            x if x == Self::Portal as u8 => Ok(Self::Portal),
-            x if x == Self::Rain as u8 => Ok(Self::Rain),
-            x if x == Self::ReversePortal as u8 => Ok(Self::ReversePortal),
-            x if x == Self::Scrape as u8 => Ok(Self::Scrape),
-            x if x == Self::SmallFlame as u8 => Ok(Self::SmallFlame),
-            x if x == Self::Smoke as u8 => Ok(Self::Smoke),
-            x if x == Self::Sneeze as u8 => Ok(Self::Sneeze),
-            x if x == Self::Snowflake as u8 => Ok(Self::Snowflake),
-            x if x == Self::Soul as u8 => Ok(Self::Soul),
-            x if x == Self::SoulFireFlame as u8 => Ok(Self::SoulFireFlame),
-            x if x == Self::Spit as u8 => Ok(Self::Spit),
-            x if x == Self::Splash as u8 => Ok(Self::Splash),
-            x if x == Self::SporeBlossomAir as u8 => Ok(Self::SporeBlossomAir),
-            x if x == Self::SquidInk as u8 => Ok(Self::SquidInk),
-            x if x == Self::SweepAttack as u8 => Ok(Self::SweepAttack),
-            x if x == Self::TotemOfUndying as u8 => Ok(Self::TotemOfUndying),
-            x if x == Self::Underwater as u8 => Ok(Self::Underwater),
-            x if x == Self::Vibration as u8 => Ok(Self::Vibration),
-            x if x == Self::WarpedSpore as u8 => Ok(Self::WarpedSpore),
-            x if x == Self::WaxOff as u8 => Ok(Self::WaxOff),
-            x if x == Self::WaxOn as u8 => Ok(Self::WaxOn),
-            x if x == Self::WhiteAsh as u8 => Ok(Self::WhiteAsh),
-            x if x == Self::Witch as u8 => Ok(Self::Witch),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
     }
 }
 

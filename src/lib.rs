@@ -13,6 +13,9 @@
 //! `golden_apple::generalized`, in case it isn't striaghtforward to do so. All enums are under
 //! the `golden_apple::enums` module.
 
+#[macro_use]
+extern crate num_derive;
+
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
 pub enum Error {

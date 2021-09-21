@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 /// Represents a block. Not all blocks are implimented or supported yet.
 pub enum Item {
@@ -31,6 +31,50 @@ pub enum Item {
     BirchPlanks = 24,
     JunglePlanks = 25,
     AcaciaPlanks = 26,
+    DarkOakPlanks = 27,
+    CrimsonPlanks = 28,
+    WarpedPlanks = 29,
+    OakSapling = 30,
+    SpruceSapling = 31,
+    BirchSapling = 32,
+    JungleSapling = 33,
+    AcaciaSapling = 34,
+    DarkOakSapling = 35,
+    Bedrock = 36,
+    Sand = 37,
+    RedSand = 38,
+    Gravel = 39,
+    CoalOre = 40,
+    DeepslateCoalOre = 41,
+    IronOre = 42,
+    DeepslateIronOre = 43,
+    CopperOre = 44,
+    DeepslateCopperOre = 45,
+    GoldOre = 46,
+    DeepslateGoldOre = 47,
+    RedstoneOre = 48,
+    DeepslateRedstoneOre = 49,
+    EmeraldOre = 50,
+    DeepslateEmeraldOre = 51,
+    LapisOre = 52,
+    DeepslateLapisOre = 53,
+    DiamondOre = 54,
+    DeepslateDiamondOre = 55,
+    NetherGoldOre = 56,
+    NetherQuartzOre = 57,
+    AncientDebris = 58,
+    CoalBlock = 59,
+    RawIronBlock = 60,
+    RawCopperBlock = 61,
+    RawGoldBlock = 62,
+    AmethystBlock = 63,
+    BuddingAmethyst = 64,
+    IronBlock = 65,
+    CopperBlock = 66,
+    GoldBlock = 67,
+    DiamondBlock = 68,
+    NetheriteBlock = 69,
+    ExposedCopper = 70,
 }
 
 impl Item {
@@ -44,36 +88,7 @@ use crate::Error;
 impl TryFrom<crate::VarInt> for Item {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        match value.value() {
-            x if x == Self::Air as i32 => Ok(Self::Air),
-            x if x == Self::Stone as i32 => Ok(Self::Stone),
-            x if x == Self::Granite as i32 => Ok(Self::Granite),
-            x if x == Self::PolishedGranite as i32 => Ok(Self::PolishedGranite),
-            x if x == Self::Diorite as i32 => Ok(Self::Diorite),
-            x if x == Self::PolishedDiorite as i32 => Ok(Self::PolishedDiorite),
-            x if x == Self::Andesite as i32 => Ok(Self::Andesite),
-            x if x == Self::PolishedAndesite as i32 => Ok(Self::PolishedAndesite),
-            x if x == Self::Deepslate as i32 => Ok(Self::Deepslate),
-            x if x == Self::CobbledDeepslate as i32 => Ok(Self::CobbledDeepslate),
-            x if x == Self::PolishedDeepslate as i32 => Ok(Self::PolishedDeepslate),
-            x if x == Self::Calcite as i32 => Ok(Self::Calcite),
-            x if x == Self::Tuff as i32 => Ok(Self::Tuff),
-            x if x == Self::DripstoneBlock as i32 => Ok(Self::DripstoneBlock),
-            x if x == Self::GrassBlock as i32 => Ok(Self::GrassBlock),
-            x if x == Self::Dirt as i32 => Ok(Self::Dirt),
-            x if x == Self::CoarseDirt as i32 => Ok(Self::CoarseDirt),
-            x if x == Self::Podzol as i32 => Ok(Self::Podzol),
-            x if x == Self::RootedDirt as i32 => Ok(Self::RootedDirt),
-            x if x == Self::CrimsonNylium as i32 => Ok(Self::CrimsonNylium),
-            x if x == Self::WarpedNylium as i32 => Ok(Self::WarpedNylium),
-            x if x == Self::Cobblestone as i32 => Ok(Self::Cobblestone),
-            x if x == Self::OakPlanks as i32 => Ok(Self::OakPlanks),
-            x if x == Self::SprucePlanks as i32 => Ok(Self::SprucePlanks),
-            x if x == Self::BirchPlanks as i32 => Ok(Self::BirchPlanks),
-            x if x == Self::JunglePlanks as i32 => Ok(Self::JunglePlanks),
-            x if x == Self::AcaciaPlanks as i32 => Ok(Self::AcaciaPlanks),
-            _ => Err(Error::EnumOutOfBound)
-        }
+        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
     }
 }
 
