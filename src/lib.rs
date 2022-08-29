@@ -356,7 +356,7 @@ impl Chat {
 
 /// Provides tools for reading, writing, and managing the various enums that Minecraft uses.
 /// Many of these enums contain descriptions of their respective attributes in quotes. This
-/// indicates that the information is taken directly from https://wiki.vg/Protocol_FAQ
+/// indicates that the information is taken directly from <https://wiki.vg/Protocol_FAQ>
 pub mod enums;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -494,8 +494,7 @@ impl Angle {
 /// Represents a Java Int (i32) using between 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarInt {
-    value: i32,
-    length: u8
+    value: i32
 }
 
 impl std::fmt::Display for VarInt {
@@ -548,7 +547,7 @@ impl VarInt {
             }
 
             if (read & msb) == 0 {
-                return Ok((VarInt {value: result, length: i}, i as usize));
+                return Ok((VarInt { value: result }, i as usize));
             }
         }
         // This will never occur.
@@ -572,7 +571,7 @@ impl VarInt {
             }
     
             if (read & msb) == 0 {
-                return Ok(VarInt {value: result, length: i});
+                return Ok(VarInt { value: result });
             }
         }
         // This will never occur.
@@ -633,13 +632,7 @@ impl VarInt {
     }
     /// Creates a VarInt from a given value.
     pub fn from_value(value: i32) -> Result<VarInt, Error> {
-        Ok(VarInt {
-            value,
-            length: VarInt::get_len_from_value(value)?
-        })
-    }
-    fn get_len_from_value(value: i32) -> Result<u8, Error> {
-        Ok(VarInt { value, length: 0 }.to_bytes()?.len() as u8)
+        Ok(VarInt { value })
     }
 }
 
@@ -647,8 +640,7 @@ impl VarInt {
 /// Represents a Java Long (i64) using between 1-10 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarLong {
-    value: i64,
-    length: u8
+    value: i64
 }
 
 impl std::fmt::Display for VarLong {
@@ -701,7 +693,7 @@ impl VarLong {
             }
 
             if (read & msb) == 0 {
-                return Ok((VarInt {value: result, length: i}, i as usize));
+                return Ok((VarInt { value: result }, i as usize));
             }
         }
         // This will never occur.
@@ -725,7 +717,7 @@ impl VarLong {
             }
     
             if (read & msb) == 0 {
-                return Ok(VarInt {value: result, length: i});
+                return Ok(VarInt { value: result });
             }
         }
         // This will never occur.
@@ -786,13 +778,7 @@ impl VarLong {
     }
     /// Creates a VarLong from a given value.
     pub fn from_value(value: i64) -> Result<VarLong, Error> {
-        Ok(VarLong {
-            value,
-            length: VarLong::get_len_from_value(value)?
-        })
-    }
-    fn get_len_from_value(value: i64) -> Result<u8, Error> {
-        Ok(VarLong { value, length: 0 }.to_bytes()?.len() as u8)
+        Ok(VarLong { value })
     }
 }
 

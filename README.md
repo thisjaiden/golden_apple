@@ -26,4 +26,9 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] UUID
 - [ ] Enums  
   Partial Support
-  
+
+# Version Support
+
+| Crate version | Minecraft version | Minecraft Protocol ID |
+| ------------- | ----------------- | --------------------- |
+|     0.17      |       1.19.2      |          762          |
