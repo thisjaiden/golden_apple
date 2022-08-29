@@ -31,4 +31,4 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 
 | Crate version | Minecraft version | Minecraft Protocol ID |
 | ------------- | ----------------- | --------------------- |
-|     0.17      |       1.19.2      |          762          |
+| 0.17 - 0.17.1 |       1.19.2      |          762          |
