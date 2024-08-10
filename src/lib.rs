@@ -43,6 +43,8 @@ pub enum Error {
     JsonParsingError(serde_json::Error),
     /// A JSON tag had a weird root structure.
     InvalidJsonRoot,
+    /// An expected value had an unexpected type.
+    InvalidJsonType,
     /// A UUID consited of characters other than 0-f
     InvalidUUID(std::num::ParseIntError)
 }
@@ -201,15 +203,10 @@ impl UUID {
         while insertable.len() < 32 {
             insertable = String::from("0") + &insertable;
         }
-        let raw_response = get(format!("https://api.mojang.com/user/profiles/{}/names", insertable)).unwrap().text().unwrap();
+        let raw_response = get(format!("https://sessionserver.mojang.com/session/minecraft/profile/{}", insertable)).unwrap().text().unwrap();
         let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
-        if json_response.is_array() {
-            let json_response = json_response.as_array().unwrap();
-            return Ok(json_response[json_response.len() - 1]["name"].as_str().ok_or(Error::InvalidJsonRoot)?.to_string());
-        }
-        else {
-            return Err(Error::InvalidJsonRoot);
-        }
+        let name = json_response["name"].as_str().ok_or(Error::InvalidJsonType)?;
+        return Ok(name.to_string());
     }
 }
 
