@@ -1267,6 +1267,14 @@ fn read_byte<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
     }
 }
 
+fn read_bytes<R: std::io::Read, const N: usize>(reader: &mut R) -> Result<[u8; N], Error> {
+    let mut buf = [0; N];
+    for i in 0..N {
+        buf[i] = read_byte(reader)?
+    }
+    return Ok(buf);
+}
+
 /// Provides tools for reading, writing, and managing NBT types.
 pub mod nbt;
 // Unit testing module.

@@ -33,6 +33,8 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 
 ## Version Support
 
+[Changelog](changelog.md)
 |  Crate version  | Minecraft version | Minecraft Protocol ID |
 | --------------- | ----------------- | --------------------- |
-| 0.17.0 - 0.17.2 |       1.19.2      |          762          |
+| 0.18.0          | 1.20.0 - 1.20.1   | 767                   |
+| 0.17.0 - 0.17.2 | 1.19.2            | 762                   |

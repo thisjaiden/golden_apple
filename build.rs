@@ -25,12 +25,6 @@ fn main() -> Result<(), serde_json::Error> {
         "/// This represents the block's ID, **NOT** the blockstate ID!"
     );
     generate_enum(
-        registries.enchantment.entries.as_object().unwrap(),
-        "enchantments.rs",
-        "Enchantment",
-        "/// All enchantments and curses"
-    );
-    generate_enum(
         registries.entity_type.entries.as_object().unwrap(),
         "entity_types.rs",
         "EntityType",
@@ -55,12 +49,6 @@ fn main() -> Result<(), serde_json::Error> {
         ""
     );
     generate_enum(
-        registries.painting.entries.as_object().unwrap(),
-        "paintings.rs",
-        "Painting",
-        ""
-    );
-    generate_enum(
         registries.custom_stat.entries.as_object().unwrap(),
         "custom_stats.rs",
         "CustomStatistic",
@@ -79,8 +67,6 @@ struct Registries {
     mob_effect: Registry,
     #[serde(rename(deserialize = "minecraft:block"))]
     block: Registry,
-    #[serde(rename(deserialize = "minecraft:enchantment"))]
-    enchantment: Registry,
     #[serde(rename(deserialize = "minecraft:entity_type"))]
     entity_type: Registry,
     #[serde(rename(deserialize = "minecraft:item"))]
@@ -91,8 +77,6 @@ struct Registries {
     potion: Registry,
     #[serde(rename(deserialize = "minecraft:villager_profession"))]
     profession: Registry,
-    #[serde(rename(deserialize = "minecraft:painting_variant"))]
-    painting: Registry,
     #[serde(rename(deserialize = "minecraft:custom_stat"))]
     custom_stat: Registry,
 }

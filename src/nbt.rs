@@ -1,4 +1,4 @@
-use super::{Error, read_byte};
+use super::{Error, read_byte, read_bytes};
 
 /// Reads an entire NBT compound from a Read type.
 pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
@@ -59,7 +59,7 @@ pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
 }
 
 fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
-    let string_len = u16::from_be_bytes([read_byte(reader)?; 2]);
+    let string_len = u16::from_be_bytes(read_bytes(reader)?);
     let mut bytes = vec![];
     for _ in 0..string_len {
         bytes.push(read_byte(reader)?);
@@ -92,41 +92,25 @@ fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
 
 fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
     match type_id {
-        0x00 => {
-            return Ok(Tag::End);
-        }
-        0x01 => {
-            return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?])));
-        }
-        0x02 => {
-            return Ok(Tag::Short(i16::from_be_bytes([read_byte(reader)?; 2])));
-        }
-        0x03 => {
-            return Ok(Tag::Int(i32::from_be_bytes([read_byte(reader)?; 4])));
-        }
-        0x04 => {
-            return Ok(Tag::Long(i64::from_be_bytes([read_byte(reader)?; 8])));
-        }
-        0x05 => {
-            return Ok(Tag::Float(f32::from_be_bytes([read_byte(reader)?; 4])));
-        }
-        0x06 => {
-            return Ok(Tag::Double(f64::from_be_bytes([read_byte(reader)?; 8])));
-        }
+        0x00 => return Ok(Tag::End),
+        0x01 => return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))),
+        0x02 => return Ok(Tag::Short(i16::from_be_bytes(read_bytes(reader)?))),
+        0x03 => return Ok(Tag::Int(i32::from_be_bytes(read_bytes(reader)?))),
+        0x04 => return Ok(Tag::Long(i64::from_be_bytes(read_bytes(reader)?))),
+        0x05 => return Ok(Tag::Float(f32::from_be_bytes(read_bytes(reader)?))),
+        0x06 => return Ok(Tag::Double(f64::from_be_bytes(read_bytes(reader)?))),
         0x07 => {
-            let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+            let array_len = i32::from_be_bytes(read_bytes(reader)?);
             let mut array = vec![];
             for _ in 0..array_len {
                 array.push(i8::from_be_bytes([read_byte(reader)?]));
             }
             return Ok(Tag::ByteArray(array));
         }
-        0x08 => {
-            return Ok(Tag::String(named_tag_name_reader(reader)?));
-        }
+        0x08 => return Ok(Tag::String(named_tag_name_reader(reader)?)),
         0x09 => {
             let _list_type = read_byte(reader)?;
-            let list_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+            let list_len = i32::from_be_bytes(read_bytes(reader)?);
             if list_len < 1 {
                 return Ok(Tag::List(vec![Tag::End]));
             }
@@ -150,18 +134,18 @@ fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, 
             return Ok(Tag::Compound(compound_elements));
         }
         0x0B => {
-            let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+            let array_len = i32::from_be_bytes(read_bytes(reader)?);
             let mut array = vec![];
             for _ in 0..array_len {
-                array.push(i32::from_be_bytes([read_byte(reader)?; 4]));
+                array.push(i32::from_be_bytes(read_bytes(reader)?));
             }
             return Ok(Tag::IntArray(array));
         }
         0x0C => {
-            let array_len = i32::from_be_bytes([read_byte(reader)?; 4]);
+            let array_len = i32::from_be_bytes(read_bytes(reader)?);
             let mut array = vec![];
             for _ in 0..array_len {
-                array.push(i64::from_be_bytes([read_byte(reader)?; 8]));
+                array.push(i64::from_be_bytes(read_bytes(reader)?));
             }
             return Ok(Tag::LongArray(array));
         }
