@@ -45,8 +45,10 @@ pub enum Error {
     InvalidJsonRoot,
     /// An expected value had an unexpected type.
     InvalidJsonType,
-    /// A UUID consited of characters other than 0-f
-    InvalidUUID(std::num::ParseIntError)
+    /// A UUID consited of characters other than 0-f.
+    InvalidUUID(std::num::ParseIntError),
+    /// A Java UTF-8 string was unable to be converted to "normal" UTF-8.
+    InvalidJavaUTF8(cesu8::Cesu8DecodingError),
 }
 
 impl std::fmt::Display for Error {
@@ -64,6 +66,12 @@ impl From<serde_json::Error> for Error {
 impl From<std::num::ParseIntError> for Error {
     fn from(e: std::num::ParseIntError) -> Error {
         return Error::InvalidUUID(e);
+    }
+}
+
+impl From<cesu8::Cesu8DecodingError> for Error {
+    fn from(e: cesu8::Cesu8DecodingError) -> Error {
+        return Error::InvalidJavaUTF8(e);
     }
 }
 

@@ -1,3 +1,5 @@
+use std::hint::black_box;
+
 #[test]
 fn varint_standard_values() -> Result<(), super::Error> {
     use super::VarInt;
@@ -92,5 +94,50 @@ fn username_api() -> Result<(), super::Error> {
     assert_eq!(uuid.clone().to_value()?, 0x09773765901b4da1a1243467f482b8b3);
     // Test UUID -> username
     assert_eq!(uuid.to_username()?, String::from("thisjaiden"));
+    return Ok(());
+}
+
+#[test]
+/// Thanks to [@TheAIguy-dev](https://github.com/TheAIguy-dev) for this example!
+fn nbt_list_example() -> Result<(), super::Error> {
+    use super::nbt;
+
+    const SAMPLE: [u8; 14] = [
+        10, //       Tag::Compound
+        0, 1, //     name.len = 1
+        65, //       name = "A"
+        9, //          Tag::List
+        0, 0, //       name.len = 0
+        1, //          list type = i8
+        0, 0, 0, 1, // list length = 1
+        127, //          list[0] = 127
+        0 //         Tag::End
+    ];
+    let nbt = nbt::from_reader(&mut SAMPLE.as_ref())?;
+
+    let expected_nbt = nbt::NamedTag {
+        name: "A".to_string(),
+        tag: nbt::Tag::Compound(vec![
+            nbt::NamedTag {
+                name: "".to_string(),
+                tag: nbt::Tag::List(vec![nbt::Tag::Byte(127)])
+            }
+        ])
+    };
+
+    assert_eq!(nbt, expected_nbt);
+    return Ok(());
+}
+
+#[test]
+fn nbt_mojang_bigtest() -> Result<(), super::Error> {
+    use super::nbt;
+
+    const SAMPLE: &'static [u8; 1544] = include_bytes!("../mojang/bigtest.nbt");
+    let nbt = nbt::from_reader(&mut SAMPLE.as_ref())?;
+
+    // Make *sure* that we parse the nbt from the raw data
+    black_box(nbt);
+
     return Ok(());
 }

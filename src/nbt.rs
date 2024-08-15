@@ -5,7 +5,7 @@ pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> 
     if read_byte(reader)? != 0x0a {
         return Err(Error::InvalidNBTHeader);
     }
-    let root_name = named_tag_name_reader(reader)?;
+    let root_name = read_string_tag(reader)?;
     let mut elements = vec![];
     loop {
         let next_tag = read_named_tag(reader)?;
@@ -58,39 +58,42 @@ pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
     return Ok(final_bytes);
 }
 
-fn named_tag_name_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
+fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
     let string_len = u16::from_be_bytes(read_bytes(reader)?);
     let mut bytes = vec![];
     for _ in 0..string_len {
         bytes.push(read_byte(reader)?);
     }
-    // This is required because Mojang uses Java's modified utf-8 which isn't supported here
-    unsafe {
-        let string = String::from_utf8_unchecked(bytes);
-        return Ok(string);
-    }
+    // This is required because Mojang uses Java's modified UTF-8 which isn't
+    // good or compatible with standard UTF-8.
+    let string = cesu8::from_cesu8(&bytes)?;
+    return Ok(string.to_string());
 }
 
 fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_name;
     if !(tag_type == 0x00) {
-        tag_name = named_tag_name_reader(reader)?;
+        tag_name = read_string_tag(reader)?;
     }
     else {
         tag_name = String::from("N/A");
     }
-    let tag_val = read_from_type(reader, tag_type)?;
+    let tag_val = read_tag_by_type(reader, tag_type)?;
     return Ok(NamedTag { name: tag_name, tag: tag_val });
 }
 
-fn read_tag<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
+/// Reads a Tag from a [std::io::Read] type R, given that the first byte in the
+/// reader indicates the tag's type.
+fn read_tag_with_type<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
     let tag_type = read_byte(reader)?;
-    let tag_val = read_from_type(reader, tag_type)?;
+    let tag_val = read_tag_by_type(reader, tag_type)?;
     return Ok(tag_val);
 }
 
-fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
+/// Functionally similar to [read_tag_with_type], but the tag type must be
+/// specified instead of read from the reader.
+fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
     match type_id {
         0x00 => return Ok(Tag::End),
         0x01 => return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))),
@@ -107,16 +110,16 @@ fn read_from_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, 
             }
             return Ok(Tag::ByteArray(array));
         }
-        0x08 => return Ok(Tag::String(named_tag_name_reader(reader)?)),
+        0x08 => return Ok(Tag::String(read_string_tag(reader)?)),
         0x09 => {
-            let _list_type = read_byte(reader)?;
+            let list_type = read_byte(reader)?;
             let list_len = i32::from_be_bytes(read_bytes(reader)?);
             if list_len < 1 {
                 return Ok(Tag::List(vec![Tag::End]));
             }
             let mut list_elements = vec![];
             for _ in 0..list_len {
-                list_elements.push(read_tag(reader)?);
+                list_elements.push(read_tag_by_type(reader, list_type)?);
             }
             return Ok(Tag::List(list_elements))
         }
@@ -172,7 +175,8 @@ pub enum Tag {
     Double(f64),
     /// An array of signed bytes.
     ByteArray(Vec<i8>),
-    /// A Java modified UTF-8 string.
+    /// A Java modified UTF-8 string. Stored as a valid "normal" UTF-8 string,
+    /// converted when reading or writing to a buffer.
     String(String),
     /// A list type containing a list of tags without names. All tags will be of the same type.
     List(Vec<Tag>),
