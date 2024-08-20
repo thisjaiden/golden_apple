@@ -159,7 +159,7 @@ pub struct UUID {
 impl UUID {
     /// Generates a UUID from a Read type.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<UUID, Error> {
-        return Ok(Self::from_bytes(&[read_byte(reader)?; 16])?.0);
+        return Ok(Self::from_bytes(&read_bytes::<_, 16>(reader)?)?.0);
     }
     /// Generates a UUID from a byte array. Returns the UUID and amount of bytes needed.
     pub fn from_bytes(data: &[u8]) -> Result<(UUID, usize), Error> {
@@ -927,7 +927,7 @@ impl Position {
 /// stream, no matter how easy to parse, are included here.
 pub mod generalized {
     use super::Error;
-    use super::read_byte;
+    use super::{read_byte, read_bytes};
     use super::VarInt;
 
     /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
@@ -1101,7 +1101,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read a Java Short from the stream.
     pub fn short_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i16, Error> {
-        let bytes = [read_byte(reader)?, read_byte(reader)?];
+        let bytes = read_bytes(reader)?;
         return Ok(i16::from_be_bytes(bytes));
     }
     /// Reads a Java Short from a list of bytes. Returns the value and number of bytes read.
@@ -1128,7 +1128,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read an unsigned Java Short from the stream.
     pub fn unsigned_short_from_reader<R: std::io::Read>(reader: &mut R) -> Result<u16, Error> {
-        let bytes = [read_byte(reader)?, read_byte(reader)?];
+        let bytes = read_bytes(reader)?;
         return Ok(u16::from_be_bytes(bytes));
     }
     /// Reads an unsigned Java Short from a list of bytes. Returns the value and number of bytes read.
@@ -1155,7 +1155,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read a Java Int from the stream.
     pub fn int_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i32, Error> {
-        let bytes = [read_byte(reader)?; 4];
+        let bytes = read_bytes(reader)?;
         return Ok(i32::from_be_bytes(bytes));
     }
     /// Reads a Java Int from a list of bytes. Returns the value and number of bytes read.
@@ -1182,7 +1182,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read a Java Long from the stream.
     pub fn long_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i64, Error> {
-        let bytes = [read_byte(reader)?; 8];
+        let bytes = read_bytes(reader)?;
         return Ok(i64::from_be_bytes(bytes));
     }
     /// Reads a Java Long from a list of bytes. Returns the value and number of bytes read.
@@ -1209,7 +1209,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read a Java Float from the stream.
     pub fn float_from_reader<R: std::io::Read>(reader: &mut R) -> Result<f32, Error> {
-        let bytes = [read_byte(reader)?; 4];
+        let bytes = read_bytes(reader)?;
         return Ok(f32::from_be_bytes(bytes));
     }
     /// Reads a Java Float from a list of bytes. Returns the value and number of bytes read.
@@ -1236,7 +1236,7 @@ pub mod generalized {
     }
     /// Uses a Read type to read a Java Double from the stream.
     pub fn double_from_reader<R: std::io::Read>(reader: &mut R) -> Result<f64, Error> {
-        let bytes = [read_byte(reader)?; 8];
+        let bytes = read_bytes(reader)?;
         return Ok(f64::from_be_bytes(bytes));
     }
     /// Reads a Java Double from a list of bytes. Returns the value and number of bytes read.
@@ -1285,5 +1285,6 @@ fn read_bytes<R: std::io::Read, const N: usize>(reader: &mut R) -> Result<[u8; N
 
 /// Provides tools for reading, writing, and managing NBT types.
 pub mod nbt;
-// Unit testing module.
+/// Unit testing module.
+#[cfg(test)]
 mod test;

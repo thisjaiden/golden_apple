@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fixed some parsing bugs in the `generalized` submodule relating to improper use of `[V; N]` syntax
+- Fixed a parsing bug with `UUID`s relating to the improper use of `[V; N]` syntax
+
 ## 0.19.0
 
 - NBT string tags are now converted to valid "normal" UTF-8 strings
