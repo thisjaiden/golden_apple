@@ -49,6 +49,8 @@ pub enum Error {
     InvalidUUID(std::num::ParseIntError),
     /// A Java UTF-8 string was unable to be converted to "normal" UTF-8.
     InvalidJavaUTF8(cesu8::Cesu8DecodingError),
+    /// A Netty packet had an invalid packet ID.
+    InvalidPacketID,
 }
 
 impl std::fmt::Display for Error {
@@ -1285,6 +1287,8 @@ fn read_bytes<R: std::io::Read, const N: usize>(reader: &mut R) -> Result<[u8; N
 
 /// Provides tools for reading, writing, and managing NBT types.
 pub mod nbt;
+/// Enums and tools for communicating using the Minecraft network protocol.
+pub mod netty;
 /// Unit testing module.
 #[cfg(test)]
 mod test;

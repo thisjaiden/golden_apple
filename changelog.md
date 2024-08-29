@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The `netty` module is a new module with types and tools for communicating with standard minecraft servers and clients. As of now, it only supports the "handshake" phase of networking.
+- `enums::ProtocolState` is now `netty::ProtocolState`
+- `netty::ProtocolState` has been updated to support the "configuration" protocol state
+- `enums::NextState` is now `netty::handshake::NextState`
 - Fixed some parsing bugs in the `generalized` submodule relating to improper use of `[V; N]` syntax
 - Fixed a parsing bug with `UUID`s relating to the improper use of `[V; N]` syntax
 

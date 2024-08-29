@@ -22,14 +22,14 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] Identifier
 - [X] VarInt
 - [X] VarLong
-- [ ] Metadata
-- [ ] Slot
 - [X] NBT  
 - [X] Position
 - [X] Angle
 - [X] UUID
-- [ ] Enums  
-  Partial Support
+- [ ] Metadata
+- [ ] Slot
+- [ ] Netty (~1%)
+- [ ] Other Enums (~50%)
 
 ## Version Support
 
