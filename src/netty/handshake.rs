@@ -27,11 +27,15 @@ impl ServerboundPacket {
                 bytes.append(&mut unsigned_short_to_bytes(*server_port)?);
                 let tryinto: VarInt = VarInt::try_from(*next_state)?;
                 bytes.append(&mut tryinto.to_bytes()?);
-                return Ok(bytes);
+                let packet_length = bytes.len();
+                let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
+                result.append(&mut bytes);
+                return Ok(result);
             }
         }
     }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<ServerboundPacket, Error> {
+        let _packet_length = VarInt::from_reader(reader)?;
         let packet_id = read_byte(reader)?;
         match packet_id {
             0x00 => {
