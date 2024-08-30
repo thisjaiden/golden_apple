@@ -1,4 +1,4 @@
-use crate::{generalized::unsigned_short_to_bytes, read_byte, Error, VarInt};
+use crate::{generalized::unsigned_short_to_bytes, Error, VarInt};
 use std::io::Read;
 use crate::generalized::{string_from_reader, unsigned_short_from_reader, string_to_bytes};
 
@@ -21,23 +21,24 @@ impl ServerboundPacket {
                 server_port, next_state
             } => {
                 // Packet ID
-                bytes.push(0x00);
+                bytes.append(&mut VarInt::from_value(0)?.to_bytes()?);
+                // Fields
                 bytes.append(&mut protocol_version.to_bytes()?);
                 bytes.append(&mut string_to_bytes(server_address.clone())?);
                 bytes.append(&mut unsigned_short_to_bytes(*server_port)?);
                 let tryinto: VarInt = VarInt::try_from(*next_state)?;
                 bytes.append(&mut tryinto.to_bytes()?);
-                let packet_length = bytes.len();
-                let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
-                result.append(&mut bytes);
-                return Ok(result);
             }
         }
+        let packet_length = bytes.len();
+        let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
+        result.append(&mut bytes);
+        return Ok(result);
     }
-    pub fn from_reader<R: Read>(reader: &mut R) -> Result<ServerboundPacket, Error> {
+    pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let _packet_length = VarInt::from_reader(reader)?;
-        let packet_id = read_byte(reader)?;
-        match packet_id {
+        let packet_id = VarInt::from_reader(reader)?;
+        match packet_id.value() {
             0x00 => {
                 let protocol_version = VarInt::from_reader(reader)?;
                 let server_address = string_from_reader(reader)?;

@@ -11,6 +11,8 @@
 
 Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top level crate. NBT is dealt with in the `nbt` module.
 Types that can be fully represented in Rust have encoders/decoders under `golden_apple::generalized`, in case it isn't striaghtforward to do so.
+Communicating with existing servers and clients can be done using the packet format and tools found in the `netty` module.
+<!-- TODO: put real examples here, PLEASE. -->
 
 ## Status
 
@@ -28,7 +30,7 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - [X] UUID
 - [ ] Metadata
 - [ ] Slot
-- [ ] Netty (~1%)
+- [ ] Netty (~2%)
 - [ ] Other Enums (~50%)
 
 ## Version Support

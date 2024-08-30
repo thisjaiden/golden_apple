@@ -66,7 +66,7 @@ fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
     }
     // This is required because Mojang uses Java's modified UTF-8 which isn't
     // good or compatible with standard UTF-8.
-    let string = cesu8::from_cesu8(&bytes)?;
+    let string = cesu8::from_java_cesu8(&bytes)?;
     return Ok(string.to_string());
 }
 
@@ -273,11 +273,13 @@ impl Tag {
             },
             Self::String(data) => {
                 let mut final_data = vec![];
-                let strbytes = data.as_bytes();
+                // This is required because Mojang uses Java's modified UTF-8 which isn't
+                // good or compatible with standard UTF-8.
+                let strbytes = cesu8::to_java_cesu8(&data);
                 for byte in &(strbytes.len() as u16).to_be_bytes() {
                     final_data.push(*byte);
                 }
-                for byte in strbytes {
+                for byte in strbytes.iter() {
                     final_data.push(*byte);
                 }
                 return Ok(final_data);

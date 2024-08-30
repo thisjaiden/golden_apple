@@ -933,7 +933,7 @@ pub mod generalized {
     use super::VarInt;
 
     /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
-    /// VarInt length prefix, and does not verify that the text is utf8.
+    /// VarInt length prefix. The text is converted from Java's "Modified UTF-8" into normal UTF-8.
     pub fn string_from_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
         let string_len = super::VarInt::from_reader(reader)?.value();
         let mut text: Vec<u8> = vec![0; string_len as usize];
@@ -943,14 +943,14 @@ pub mod generalized {
                 return Err(Error::ReaderError(e));
             }
         }
-        unsafe {
-            // Minecraft is known to put weird stuff in their strings, so we're not going to double check.
-            return Ok(String::from_utf8_unchecked(text));
-        }
+        // This is required because Mojang uses Java's modified UTF-8 which isn't
+        // good or compatible with standard UTF-8.
+        let string = cesu8::from_java_cesu8(&text)?;
+        return Ok(string.to_string());
     }
     /// Reads a `String` from a series of bytes. This function returns the string without the VarInt
     /// length prefix, but does include the size of that VarInt in the final size calculation. The text
-    /// is not verified to be utf8.
+    /// is converted from Java's "Modified UTF-8" into normal UTF-8.
     pub fn string_from_bytes(bytes: &[u8]) -> Result<(String, usize), Error> {
         let string_len = super::VarInt::from_bytes(bytes)?;
         let mut text: Vec<u8> = vec![0; string_len.0.value() as usize];
@@ -958,14 +958,15 @@ pub mod generalized {
         for i in 0..text.len() {
             text[i] = finbytes[i];
         }
-        unsafe {
-            // Minecraft is known to put weird stuff in their strings, so we're not going to double check.
-            return Ok((String::from_utf8_unchecked(text), string_len.0.value() as usize + string_len.1));
-        }
+        // This is required because Mojang uses Java's modified UTF-8 which isn't
+        // good or compatible with standard UTF-8.
+        let string = cesu8::from_java_cesu8(&text)?;
+        return Ok((string.to_string(), string_len.0.value() as usize + string_len.1));
+
     }
     /// Writes a `String` to a Write interface.
     pub fn string_to_writer<W: std::io::Write>(writer: &mut W, data: String) -> Result<(), Error> {
-        let as_bytes = data.as_bytes();
+        let as_bytes = cesu8::to_java_cesu8(&data);
         let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
         match writer.write_all(&length_prefix.to_bytes()?) {
             Ok(_) => {},
@@ -973,7 +974,7 @@ pub mod generalized {
                 return Err(Error::WriterError(e));
             }
         }
-        match writer.write_all(as_bytes) {
+        match writer.write_all(&as_bytes) {
             Ok(_) => {},
             Err(e) => {
                 return Err(Error::WriterError(e));
@@ -983,7 +984,7 @@ pub mod generalized {
     }
     /// Converts a `String` to a VarInt length prefixed series of bytes.
     pub fn string_to_bytes(data: String) -> Result<Vec<u8>, Error> {
-        let as_bytes = data.as_bytes();
+        let as_bytes = cesu8::to_java_cesu8(&data);
         let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
         let mut vec_vals = as_bytes.to_vec();
         for byte in length_prefix.to_bytes()? {

@@ -8,6 +8,12 @@
 - `enums::NextState` is now `netty::handshake::NextState`
 - Fixed some parsing bugs in the `generalized` submodule relating to improper use of `[V; N]` syntax
 - Fixed a parsing bug with `UUID`s relating to the improper use of `[V; N]` syntax
+- `generalized::string_from_bytes`, `generalized::string_from_reader`, `generalized::string_to_bytes`, and `generalized_string_to_writer` have been updated to convert to and from "normal" UTF-8 strings and Java's "Modified UTF-8."
+- Fixed serialization and writing NBT to properly convert strings into Java's "Modified UTF-8."
+- Updated dependencies to the latest versions:
+  - `serde` 1.0.207 -> 1.0.209
+  - `serde_json` 1.0.124 -> 1.0.127
+  - `reqwest` 0.12.5 -> 0.12.7
 
 ## 0.19.0
 
