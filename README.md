@@ -57,5 +57,5 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 [Changelog](changelog.md)
 |  Crate version  | Minecraft version | Minecraft Protocol ID |
 | --------------- | ----------------- | --------------------- |
-| 0.18.0 - 0.19.0 | 1.20.0 - 1.20.1   | 767                   |
+| 0.18.0 - 0.19.0 | 1.21.0 - 1.21.1   | 767                   |
 | 0.17.0 - 0.17.2 | 1.19.2            | 762                   |
