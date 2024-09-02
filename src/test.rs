@@ -139,5 +139,7 @@ fn nbt_mojang_bigtest() -> Result<(), super::Error> {
     // Make *sure* that we parse the nbt from the raw data
     black_box(nbt);
 
+    // TODO: confirm that this data was parsed correctly, not just parsed.
+
     return Ok(());
 }

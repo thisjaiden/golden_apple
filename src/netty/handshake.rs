@@ -49,7 +49,7 @@ impl ServerboundPacket {
                 });
             }
             _ => {
-                return Err(Error::InvalidPacketID);
+                return Err(Error::InvalidPacketId);
             }
         }
     }

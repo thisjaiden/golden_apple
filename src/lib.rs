@@ -1,20 +1,9 @@
-//! # Overview
-//! `golden_apple` is a library for decoding, encoding, and using common types found in Minecraft:
-//! Java Edition.
-//!
-//! # Goals
-//! - Provide a generalized format for sharing and using Minecraft's data types
-//! - Simplify the decoding and encoding of network data
-//! - Abstract away enums usually passed as numbers
-//!
-//! # Usage
-//! Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top
-//! level module. Types that can be fully represented in Rust have encoders/decoders under
-//! `golden_apple::generalized`, in case it isn't striaghtforward to do so. All enums are under
-//! the `golden_apple::enums` module.
+#![doc = include_str!("../README.md")]
 
 #[macro_use]
 extern crate num_derive;
+
+const PROTOCOL_VERSION: i32 = 767;
 
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
@@ -30,9 +19,9 @@ pub enum Error {
     /// A boolean had a value other than true or false.
     InvalidBool,
     /// While reading NBT, the stream started with a value other than 0x0a.
-    InvalidNBTHeader,
+    InvalidNbtHeader,
     /// While reading NBT, the stream had an invalid data type ID.
-    InvalidNBTType,
+    InvalidNbtType,
     /// While writing NBT, the root tag was not Tag::Compound.
     InvalidRootTag,
     /// The given identifier had more than one `:`, rendering it invalid.
@@ -46,11 +35,16 @@ pub enum Error {
     /// An expected value had an unexpected type.
     InvalidJsonType,
     /// A UUID consited of characters other than 0-f.
-    InvalidUUID(std::num::ParseIntError),
+    InvalidUuid(std::num::ParseIntError),
     /// A Java UTF-8 string was unable to be converted to "normal" UTF-8.
-    InvalidJavaUTF8(cesu8::Cesu8DecodingError),
+    InvalidJavaUtf8(cesu8::Cesu8DecodingError),
     /// A Netty packet had an invalid packet ID.
-    InvalidPacketID,
+    InvalidPacketId,
+    /// A generic IO error was thrown.
+    IoError(std::io::Error),
+    /// An attempt was made to read or parse a packet destined for the client
+    /// during the "handshake" phase of networking, which shouldn't be possible.
+    NoClientboundHandshake
 }
 
 impl std::fmt::Display for Error {
@@ -67,13 +61,19 @@ impl From<serde_json::Error> for Error {
 
 impl From<std::num::ParseIntError> for Error {
     fn from(e: std::num::ParseIntError) -> Error {
-        return Error::InvalidUUID(e);
+        return Error::InvalidUuid(e);
     }
 }
 
 impl From<cesu8::Cesu8DecodingError> for Error {
     fn from(e: cesu8::Cesu8DecodingError) -> Error {
-        return Error::InvalidJavaUTF8(e);
+        return Error::InvalidJavaUtf8(e);
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Error {
+        return Error::IoError(e);
     }
 }
 

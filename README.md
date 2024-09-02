@@ -6,13 +6,32 @@
 
 - Provide a generalized format for sharing and using Minecraft's data types
 - Simplify the decoding and encoding of network data
+- Abstract away enums usually passed as numbers
 
 ## Usage
 
-Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top level crate. NBT is dealt with in the `nbt` module.
-Types that can be fully represented in Rust have encoders/decoders under `golden_apple::generalized`, in case it isn't striaghtforward to do so.
+### Parsing NBT
+
+```rust, no_run
+let mut nbt_file_reader = std::fs::File::open("test.nbt")
+    .expect("Unable to open file!");
+
+match golden_apple::nbt::from_reader(&mut nbt_file_reader) {
+    Ok(named_tag) => {
+        println!("NBT Data: {:#?}", named_tag);
+    }
+    Err(e) => {
+        panic!("Unable to parse NBT! ({:?})", e);
+    }
+}
+```
+
+### Other
+
+Proprietary Minecraft types like `VarInt`, `VarLong`, and `Position` are a part of the top level crate.
+Types that can be fully represented in Rust have encoders/decoders under `golden_apple::generalized` for reading and writing from both byte arrays and Rust's Read/Write traits.
 Communicating with existing servers and clients can be done using the packet format and tools found in the `netty` module.
-<!-- TODO: put real examples here, PLEASE. -->
+<!-- TODO: put more real examples here, PLEASE. -->
 
 ## Status
 

@@ -3,7 +3,12 @@
 /// clientbound packets during this phase, and that the only serverbound packet
 /// immediately changes both the client and server's stage to a different one.
 pub mod handshake;
-mod status;
+
+/// Packets for communicating with tradition Minecraft software during the
+/// "status" stage of a connection. Note that this is a connection dead-end, and
+/// some conditions apply to the order in which packets should be sent and
+/// recieved. For more information, see [wiki.vg](https://wiki.vg/Protocol#Status).
+pub mod status;
 
 pub enum ServerboundPacket {
     Handshake(handshake::ServerboundPacket),
@@ -12,6 +17,19 @@ pub enum ServerboundPacket {
 
 pub enum ClientboundPacket {
     Status(status::ClientboundPacket),
+}
+
+impl ClientboundPacket {
+    pub fn from_reader<R: std::io::Read>(
+        reader: &mut R, protocol_state: ProtocolState
+    ) -> Result<Self, crate::Error> {
+        match protocol_state {
+            ProtocolState::Handshake => {
+                return Err(crate::Error::NoClientboundHandshake)
+            }
+            _ => todo!()
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]

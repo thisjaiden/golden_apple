@@ -3,7 +3,7 @@ use super::{Error, read_byte, read_bytes};
 /// Reads an entire NBT compound from a Read type.
 pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     if read_byte(reader)? != 0x0a {
-        return Err(Error::InvalidNBTHeader);
+        return Err(Error::InvalidNbtHeader);
     }
     let root_name = read_string_tag(reader)?;
     let mut elements = vec![];
@@ -153,7 +153,7 @@ fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag
             return Ok(Tag::LongArray(array));
         }
         _ => {
-            return Err(Error::InvalidNBTType);
+            return Err(Error::InvalidNbtType);
         }
     }
 }

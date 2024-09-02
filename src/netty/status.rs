@@ -52,7 +52,7 @@ impl ServerboundPacket {
                 return Ok(ServerboundPacket::PingRequest { payload });
             }
             _ => {
-                return Err(Error::InvalidPacketID);
+                return Err(Error::InvalidPacketId);
             }
         }
     }
@@ -94,7 +94,7 @@ impl ClientboundPacket {
                 return Ok(ClientboundPacket::PingResponse { payload });
             }
             _ => {
-                return Err(Error::InvalidPacketID);
+                return Err(Error::InvalidPacketId);
             }
         }
     }
