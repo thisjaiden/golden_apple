@@ -4,19 +4,30 @@
 /// immediately changes both the client and server's stage to a different one.
 pub mod handshake;
 
-/// Packets for communicating with tradition Minecraft software during the
+/// Packets for communicating with traditional Minecraft software during the
 /// "status" stage of a connection. Note that this is a connection dead-end, and
 /// some conditions apply to the order in which packets should be sent and
 /// recieved. For more information, see [wiki.vg](https://wiki.vg/Protocol#Status).
 pub mod status;
 
+/// Structs and Packets for communicating with traditional Minecraft software
+/// during the "login" stage of a connection. This is the stage at which
+/// compression and encryption may be enabled, so all conversion tools will have
+/// the following variants:
+/// - `_enc` Encrypted
+/// - `_com` Compressed
+/// - `_enc_com` Encrypted & Compressed
+pub mod login;
+
 pub enum ServerboundPacket {
     Handshake(handshake::ServerboundPacket),
     Status(status::ServerboundPacket),
+    Login(login::ServerboundPacket),
 }
 
 pub enum ClientboundPacket {
     Status(status::ClientboundPacket),
+    Login(login::ClientboundPacket),
 }
 
 impl ClientboundPacket {
@@ -25,7 +36,15 @@ impl ClientboundPacket {
     ) -> Result<Self, crate::Error> {
         match protocol_state {
             ProtocolState::Handshake => {
-                return Err(crate::Error::NoClientboundHandshake)
+                return Err(crate::Error::NoClientboundHandshake);
+            },
+            ProtocolState::Status => {
+                return Ok(
+                    ClientboundPacket::Status(
+                        status::ClientboundPacket::from_reader(reader)?
+                    )
+                );
+            },
             }
             _ => todo!()
         }

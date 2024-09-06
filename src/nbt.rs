@@ -70,7 +70,7 @@ fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
     return Ok(string.to_string());
 }
 
-fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
+pub fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_name;
     if !(tag_type == 0x00) {
@@ -85,7 +85,7 @@ fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
 
 /// Reads a Tag from a [std::io::Read] type R, given that the first byte in the
 /// reader indicates the tag's type.
-fn read_tag_with_type<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
+pub fn read_tag_with_type<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_val = read_tag_by_type(reader, tag_type)?;
     return Ok(tag_val);
@@ -93,7 +93,7 @@ fn read_tag_with_type<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
 
 /// Functionally similar to [read_tag_with_type], but the tag type must be
 /// specified instead of read from the reader.
-fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
+pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
     match type_id {
         0x00 => return Ok(Tag::End),
         0x01 => return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))),

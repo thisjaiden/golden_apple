@@ -35,22 +35,12 @@ Communicating with existing servers and clients can be done using the packet for
 
 ## Status
 
-This crate is unfinished and some features aren't yet present. Here's an overview of what is and isn't done:
+This crate is unfinished and some features aren't yet present. Here's an overview of what's still in progress:
 
-- [X] Standard Java Types  
-- [X] String  
-- [X] Chat
-- [X] Identifier
-- [X] VarInt
-- [X] VarLong
-- [X] NBT  
-- [X] Position
-- [X] Angle
-- [X] UUID
-- [ ] Metadata
-- [ ] Slot
-- [ ] Netty (~2%)
-- [ ] Other Enums (~50%)
+- Metadata
+- Slot
+- Netty (~8%)
+- Other General Enums (~50%)
 
 ## Version Support
 

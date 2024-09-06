@@ -1,6 +1,6 @@
 use crate::{generalized::unsigned_short_to_bytes, Error, VarInt};
 use std::io::Read;
-use crate::generalized::{string_from_reader, unsigned_short_from_reader, string_to_bytes};
+use crate::generalized::{string_from_reader, unsigned_short_from_reader, string_to_bytes_no_cesu8};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ServerboundPacket {
@@ -24,7 +24,7 @@ impl ServerboundPacket {
                 bytes.append(&mut VarInt::from_value(0)?.to_bytes()?);
                 // Fields
                 bytes.append(&mut protocol_version.to_bytes()?);
-                bytes.append(&mut string_to_bytes(server_address.clone())?);
+                bytes.append(&mut string_to_bytes_no_cesu8(server_address.clone())?);
                 bytes.append(&mut unsigned_short_to_bytes(*server_port)?);
                 let tryinto: VarInt = VarInt::try_from(*next_state)?;
                 bytes.append(&mut tryinto.to_bytes()?);

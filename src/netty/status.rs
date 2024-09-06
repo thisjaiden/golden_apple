@@ -1,5 +1,5 @@
 use crate::{Error, VarInt};
-use crate::generalized::{long_from_reader, long_to_bytes, string_from_reader, string_to_bytes};
+use crate::generalized::{long_from_reader, long_to_bytes, string_from_reader, string_to_bytes_no_cesu8};
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -66,7 +66,7 @@ impl ClientboundPacket {
                 // Packet ID
                 bytes.append(&mut VarInt::from_value(0x00)?.to_bytes()?);
                 // Payload
-                bytes.append(&mut string_to_bytes(response.clone())?);
+                bytes.append(&mut string_to_bytes_no_cesu8(response.clone())?);
             }
             Self::PingResponse { payload } => {
                 // Packet ID

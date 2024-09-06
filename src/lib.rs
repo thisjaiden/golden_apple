@@ -8,7 +8,8 @@ const PROTOCOL_VERSION: i32 = 767;
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
 pub enum Error {
-    /// The datastream representing a VarInt exceded the maximum acceptable size.
+    /// The datastream representing a VarInt or VarLong exceded the maximum
+    /// acceptable size.
     VarIntTooLong,
     /// An error occured while using a `Read` type to parse.
     ReaderError(std::io::Error),
@@ -152,7 +153,7 @@ impl StatusResponse {
 }
 
 /// Represents a Unique User ID. Used to track players and entities.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct UUID {
     /// The value of this UUID
     value: u128
@@ -501,7 +502,8 @@ impl Angle {
 /// Represents a Java Int (i32) using between 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarInt {
-    value: i32
+    value: i32,
+    read_size: Option<u8>,
 }
 
 impl std::fmt::Display for VarInt {
@@ -554,7 +556,7 @@ impl VarInt {
             }
 
             if (read & msb) == 0 {
-                return Ok((VarInt { value: result }, i as usize));
+                return Ok((VarInt { value: result, read_size: Some(i) }, i as usize));
             }
         }
         // This will never occur.
@@ -578,7 +580,7 @@ impl VarInt {
             }
     
             if (read & msb) == 0 {
-                return Ok(VarInt { value: result });
+                return Ok(VarInt { value: result, read_size: Some(i) });
             }
         }
         // This will never occur.
@@ -639,7 +641,10 @@ impl VarInt {
     }
     /// Creates a VarInt from a given value.
     pub fn from_value(value: i32) -> Result<VarInt, Error> {
-        Ok(VarInt { value })
+        Ok(VarInt { value, read_size: None })
+    }
+    pub fn read_size(&self) -> Option<u8> {
+        self.read_size
     }
 }
 
@@ -647,7 +652,8 @@ impl VarInt {
 /// Represents a Java Long (i64) using between 1-10 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarLong {
-    value: i64
+    value: i64,
+    read_size: Option<u8>
 }
 
 impl std::fmt::Display for VarLong {
@@ -668,13 +674,13 @@ impl PartialEq for VarLong {
 }
 
 impl VarLong {
-    /// Returns the value of a given VarInt
+    /// Returns the value of a given VarLong
     pub fn value(self) -> i64 {
         return self.value;
     }
     /// Creates a VarLong from a series of bytes. Returns the value and the amount of bytes used if
     /// creation is successful.
-    pub fn from_bytes(data: &[u8]) -> Result<(VarInt, usize), Error> {
+    pub fn from_bytes(data: &[u8]) -> Result<(VarLong, usize), Error> {
         let mut iterator = data.iter();
         let mut result = 0;
 
@@ -692,7 +698,7 @@ impl VarLong {
                 }
             }
 
-            result |= ((read & mask) as i32) << (7 * i);
+            result |= ((read & mask) as i64) << (7 * i);
 
             // The 10th byte is only allowed to have the 4 smallest bits set
             if i == 9 && (read & 0xf0 != 0) {
@@ -700,14 +706,14 @@ impl VarLong {
             }
 
             if (read & msb) == 0 {
-                return Ok((VarInt { value: result }, i as usize));
+                return Ok((VarLong { value: result, read_size: Some(i) }, i as usize));
             }
         }
         // This will never occur.
         panic!("golden_apple::VarLong::from_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarLong from a reader containing bytes.
-    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<VarInt, Error> {
+    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<VarLong, Error> {
         let mut result = 0;
 
         let msb: u8 = 0b10000000;
@@ -716,7 +722,7 @@ impl VarLong {
         for i in 0..10 {
             let read = read_byte(reader)?;
     
-            result |= ((read & mask) as i32) << (7 * i);
+            result |= ((read & mask) as i64) << (7 * i);
     
             // The 10th byte is only allowed to have the 4 smallest bits set
             if i == 9 && (read & 0xf0 != 0) {
@@ -724,7 +730,7 @@ impl VarLong {
             }
     
             if (read & msb) == 0 {
-                return Ok(VarInt { value: result });
+                return Ok(VarLong { value: result, read_size: Some(i) });
             }
         }
         // This will never occur.
@@ -785,7 +791,10 @@ impl VarLong {
     }
     /// Creates a VarLong from a given value.
     pub fn from_value(value: i64) -> Result<VarLong, Error> {
-        Ok(VarLong { value })
+        Ok(VarLong { value, read_size: None })
+    }
+    pub fn read_size(&self) -> Option<u8> {
+        self.read_size
     }
 }
 
@@ -935,7 +944,7 @@ pub mod generalized {
     /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
     /// VarInt length prefix. The text is converted from Java's "Modified UTF-8" into normal UTF-8.
     pub fn string_from_reader<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
-        let string_len = super::VarInt::from_reader(reader)?.value();
+        let string_len = VarInt::from_reader(reader)?.value();
         let mut text: Vec<u8> = vec![0; string_len as usize];
         match reader.read_exact(&mut text) {
             Ok(_) => {},
@@ -948,11 +957,25 @@ pub mod generalized {
         let string = cesu8::from_java_cesu8(&text)?;
         return Ok(string.to_string());
     }
+    /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
+    /// VarInt length prefix. The text is not converted from Java's "Modified UTF-8."
+    pub fn string_from_reader_no_cesu8<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
+        let string_len = VarInt::from_reader(reader)?.value();
+        let mut text: Vec<u8> = vec![0; string_len as usize];
+        match reader.read_exact(&mut text) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::ReaderError(e));
+            }
+        }
+        // TODO: proper error!
+        return Ok(std::str::from_utf8(&text).expect("Invalid UTF-8!").to_string());
+    }
     /// Reads a `String` from a series of bytes. This function returns the string without the VarInt
     /// length prefix, but does include the size of that VarInt in the final size calculation. The text
     /// is converted from Java's "Modified UTF-8" into normal UTF-8.
     pub fn string_from_bytes(bytes: &[u8]) -> Result<(String, usize), Error> {
-        let string_len = super::VarInt::from_bytes(bytes)?;
+        let string_len = VarInt::from_bytes(bytes)?;
         let mut text: Vec<u8> = vec![0; string_len.0.value() as usize];
         let finbytes = bytes.split_at(string_len.1).1;
         for i in 0..text.len() {
@@ -962,9 +985,25 @@ pub mod generalized {
         // good or compatible with standard UTF-8.
         let string = cesu8::from_java_cesu8(&text)?;
         return Ok((string.to_string(), string_len.0.value() as usize + string_len.1));
-
     }
-    /// Writes a `String` to a Write interface.
+    /// Reads a `String` from a series of bytes. This function returns the string without the VarInt
+    /// length prefix, but does include the size of that VarInt in the final size calculation. The text
+    /// is not converted to Java's "Modified UTF-8."
+    pub fn string_from_bytes_no_cesu8(bytes: &[u8]) -> Result<(String, usize), Error> {
+        let string_len = VarInt::from_bytes(bytes)?;
+        let mut text: Vec<u8> = vec![0; string_len.0.value() as usize];
+        let finbytes = bytes.split_at(string_len.1).1;
+        for i in 0..text.len() {
+            text[i] = finbytes[i];
+        }
+        // TODO: proper error!
+        return Ok((
+            std::str::from_utf8(&text).expect("Invalid UTF-8!").to_string(),
+            string_len.0.value() as usize + string_len.1
+        ));
+    }
+    /// Writes a `String` to a Write interface. Converts into Java's modified
+    /// UTF-8 format.
     pub fn string_to_writer<W: std::io::Write>(writer: &mut W, data: String) -> Result<(), Error> {
         let as_bytes = cesu8::to_java_cesu8(&data);
         let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
@@ -982,15 +1021,42 @@ pub mod generalized {
         }
         return Ok(());
     }
-    /// Converts a `String` to a VarInt length prefixed series of bytes.
+    /// Writes a `String` to a Write interface. Does not convert into Java's
+    /// modified UTF-8 format.
+    pub fn string_to_writer_no_cesu8<W: std::io::Write>(writer: &mut W, data: String) -> Result<(), Error> {
+        let as_bytes = data.into_bytes();
+        let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
+        match writer.write_all(&length_prefix.to_bytes()?) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+        match writer.write_all(&as_bytes) {
+            Ok(_) => {},
+            Err(e) => {
+                return Err(Error::WriterError(e));
+            }
+        }
+        return Ok(());
+    }
+    /// Converts a `String` to a VarInt length prefixed series of bytes. Converts
+    /// from Java's modified UTF-8 to standard UTF-8.
     pub fn string_to_bytes(data: String) -> Result<Vec<u8>, Error> {
         let as_bytes = cesu8::to_java_cesu8(&data);
-        let length_prefix = VarInt::from_value(as_bytes.len() as i32)?;
-        let mut vec_vals = as_bytes.to_vec();
-        for byte in length_prefix.to_bytes()? {
-            vec_vals.push(byte);
-        }
-        return Ok(vec_vals);
+        let len = VarInt::from_value(as_bytes.len() as i32)?;
+        let mut len_as_bytes = len.to_bytes()?;
+        len_as_bytes.append(&mut as_bytes.to_vec());
+        return Ok(len_as_bytes);
+    }
+    /// Converts a `String` to a VarInt length prefixed series of bytes. Does not
+    /// preform modified UTF-8 conversion, unlike [string_to_bytes].
+    pub fn string_to_bytes_no_cesu8(data: String) -> Result<Vec<u8>, Error> {
+        let as_bytes = data.as_bytes();
+        let len = VarInt::from_value(as_bytes.len() as i32)?;
+        let mut len_as_bytes = len.to_bytes()?;
+        len_as_bytes.append(&mut as_bytes.to_vec());
+        return Ok(len_as_bytes);
     }
     /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
     pub fn boolean_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
