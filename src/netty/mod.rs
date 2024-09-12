@@ -19,12 +19,21 @@ pub mod status;
 /// - `_enc_com` Encrypted & Compressed
 pub mod login;
 
+
+/// Represents all the packets that may be sent to the server at various stages
+/// of a client-server interaction.
 pub enum ServerboundPacket {
+    /// Serverbound packets immediately following the start of a connection.
+    /// Known as the "handshake" stage.
     Handshake(handshake::ServerboundPacket),
+    /// Serverbound packets if a client requests to switch to the "status" stage.
     Status(status::ServerboundPacket),
+    /// Serverbound packets if a client requests to switch to the "login" stage.
     Login(login::ServerboundPacket),
 }
 
+/// Represents all the packets that may be sent to the client at various stages
+/// of a client-server interaction.
 pub enum ClientboundPacket {
     Status(status::ClientboundPacket),
     Login(login::ClientboundPacket),
@@ -39,12 +48,14 @@ impl ClientboundPacket {
                 return Err(crate::Error::NoClientboundHandshake);
             },
             ProtocolState::Status => {
-                return Ok(
-                    ClientboundPacket::Status(
-                        status::ClientboundPacket::from_reader(reader)?
-                    )
-                );
+                return Ok(ClientboundPacket::Status(
+                    status::ClientboundPacket::from_reader(reader)?
+                ));
             },
+            ProtocolState::Login => {
+                return Ok(ClientboundPacket::Login(
+                    login::ClientboundPacket::from_reader(reader)?
+                ));
             }
             _ => todo!()
         }

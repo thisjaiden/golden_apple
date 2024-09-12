@@ -1,5 +1,5 @@
 use crate::{Error, Identifier, VarInt, UUID};
-use crate::generalized::{unsigned_byte_from_reader, string_from_reader_no_cesu8, string_to_bytes_no_cesu8};
+use crate::generalized::{boolean_from_reader, string_from_reader_no_cesu8, string_to_bytes_no_cesu8};
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -30,7 +30,7 @@ pub enum ClientboundPacket {
     Disconnect {
         reason: String // TODO: https://wiki.vg/Protocol#Type:JSON_Text_Component
     },
-    Login {
+    EncryptionRequest {
         server_id: String,
         public_key: Vec<u8>,
         verify_token: Vec<u8>,
@@ -74,7 +74,7 @@ impl ServerboundPacket {
                 // Payload (username, UUID)
                 // Anything larger than 16 characters is invalid.
                 assert!(name.chars().count() <= 16);
-                bytes.append(&mut string_to_bytes_no_cesu8(name.to_string())?);
+                bytes.append(&mut string_to_bytes_no_cesu8(name.clone())?);
                 bytes.append(&mut uuid.to_bytes()?);
             }
             Self::EncryptionResponse { shared_secret, verify_token } => {
@@ -142,6 +142,18 @@ impl ServerboundPacket {
         result.append(&mut bytes);
         return Ok(result);
     }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_enc_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
         let packet_id = VarInt::from_reader(reader)?;
@@ -166,14 +178,8 @@ impl ServerboundPacket {
             }
             0x02 => {
                 let message_id = VarInt::from_reader(reader)?;
-                let bool_result = unsigned_byte_from_reader(reader)?;
-                if bool_result == 0x00 {
-                    return Ok(ServerboundPacket::LoginPluginResponse {
-                        message_id,
-                        data: None
-                    });
-                }
-                else if bool_result == 0x01 {
+                let bool_result = boolean_from_reader(reader)?;
+                if bool_result {
                     let dta_len =
                         packet_length.value() as usize -
                         packet_id.read_size().unwrap() as usize -
@@ -187,14 +193,188 @@ impl ServerboundPacket {
                     });
                 }
                 else {
-                    // TODO: proper error instead of panic
-                    panic!("Invalid bool!")
+                    return Ok(ServerboundPacket::LoginPluginResponse {
+                        message_id,
+                        data: None
+                    });
                 }
             }
-            0x03..0x04 => todo!(),
+            0x03 => return Ok(ServerboundPacket::LoginAcknowledged),
+            0x04 => {
+                let key = Identifier::from_reader(reader)?;
+                let bool_result = boolean_from_reader(reader)?;
+                if bool_result {
+                    let dta_len = VarInt::from_reader(reader)?;
+                    let mut data = vec![0; dta_len.value() as usize];
+                    reader.read_exact(&mut data).unwrap();
+                    return Ok(ServerboundPacket::CookieResponse {
+                        key,
+                        payload: Some(data)
+                    });
+                    
+                }
+                else {
+                    return Ok(ServerboundPacket::CookieResponse {
+                        key,
+                        payload: None
+                    });
+                }
+            },
             _ => {
                 return Err(Error::InvalidPacketId);
             }
         }
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_enc<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_enc_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
+    }
+}
+
+impl ClientboundPacket {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut bytes = vec![];
+        match self {
+            Self::Disconnect { reason } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x00)?.to_bytes()?);
+
+                // Payload
+                // TODO: this may need cesu8 conversion?
+                bytes.append(&mut string_to_bytes_no_cesu8(reason.clone())?);
+            }
+            Self::EncryptionRequest {
+                server_id, public_key, verify_token,
+                should_authenticate
+            } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x01)?.to_bytes()?);
+
+                // Payload
+                // Server ID
+                assert!(server_id.chars().count() <= 20);
+                bytes.append(&mut string_to_bytes_no_cesu8(server_id.clone())?);
+                // Public Key
+                bytes.append(&mut VarInt::from_value(public_key.len() as i32)?.to_bytes()?);
+                bytes.append(&mut public_key.clone());
+                // Verify Token
+                bytes.append(&mut VarInt::from_value(verify_token.len() as i32)?.to_bytes()?);
+                bytes.append(&mut verify_token.clone());
+                // Should Authenticate
+                bytes.push(if *should_authenticate { 0x01 } else { 0x00 });
+            }
+            Self::LoginSuccess {
+                uuid, username, properties,
+                strict_error_handling
+            } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x02)?.to_bytes()?);
+
+                // Payload
+                // UUID
+                bytes.append(&mut uuid.to_bytes()?);
+                // Username
+                assert!(username.chars().count() <= 16);
+                bytes.append(&mut string_to_bytes_no_cesu8(username.clone())?);
+
+                // Properties len
+                bytes.append(&mut VarInt::from_value(properties.len() as i32)?.to_bytes()?);
+                // Properties
+                for property in properties {
+                    assert!(property.name.chars().count() <= 32767);
+                    bytes.append(&mut string_to_bytes_no_cesu8(property.name.clone())?);
+                    assert!(property.value.chars().count() <= 32767);
+                    bytes.append(&mut string_to_bytes_no_cesu8(property.value.clone())?);
+                    if let Some(signature) = &property.signature {
+                        bytes.push(0x01);
+                        assert!(signature.chars().count() <= 32767);
+                        bytes.append(&mut string_to_bytes_no_cesu8(signature.clone())?);
+                    }
+                    else {
+                        bytes.push(0x00);
+                    }
+                }
+
+                // Error Handling
+                bytes.push(if *strict_error_handling { 0x01 } else { 0x00 });
+            }
+            Self::SetCompression { threshold } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x03)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut threshold.to_bytes()?);
+            }
+            Self::LoginPluginRequest {
+                message_id, channel, data
+            } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x04)?.to_bytes()?);
+
+                // Payload
+                // Message ID
+                bytes.append(&mut message_id.to_bytes()?);
+                // Channel
+                bytes.append(&mut channel.to_bytes()?);
+                // Data
+                // TODO: this clone is gross. Something must be done!
+                assert!(data.len() <= 1048576);
+                bytes.append(&mut data.clone());
+            }
+            Self::CookieRequest { key } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x05)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut key.to_bytes()?);
+            }
+        }
+        // Calculate packet length, prepend, and send it!
+        let packet_length = bytes.len();
+        let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
+        result.append(&mut bytes);
+        return Ok(result);
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn to_bytes_enc_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
+        todo!()
+    }
+    pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        let packet_length = VarInt::from_reader(reader)?;
+        let packet_id = VarInt::from_reader(reader)?;
+        match packet_id.value() {
+            0x00..0x05 => todo!(),
+            _ => {
+                return Err(Error::InvalidPacketId);
+            }
+        }
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_enc<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
+    }
+    /// Not done! Please wait for this to be finished or open a PR!
+    pub fn from_reader_enc_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        todo!()
     }
 }

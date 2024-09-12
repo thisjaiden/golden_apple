@@ -3,7 +3,10 @@
 #[macro_use]
 extern crate num_derive;
 
-const PROTOCOL_VERSION: i32 = 767;
+/// The Minecraft protocol version used for communicating over the network with
+/// the `netty` module. see [wiki.vg](https://wiki.vg/Protocol_version_numbers)
+/// for more information.
+pub const PROTOCOL_VERSION: i32 = 767;
 
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
@@ -407,8 +410,8 @@ impl Identifier {
         }
     }
     /// Writes this Identifier to a series of bytes.
-    pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
-        return Ok(generalized::string_to_bytes(self.to_string()?)?);
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        return Ok(generalized::string_to_bytes_no_cesu8(self.to_string()?)?);
     }
     /// Writes this Identifier to a Write type.
     pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
@@ -417,7 +420,7 @@ impl Identifier {
     }
     /// Writes this Identifier to a String. Always writes in the extended format for selectors under
     /// the `minecraft` namespace.
-    pub fn to_string(self) -> Result<String, Error> {
+    pub fn to_string(&self) -> Result<String, Error> {
         let mut full_string = String::new();
         full_string += &self.namespace;
         full_string += ":";
@@ -1058,7 +1061,6 @@ pub mod generalized {
         len_as_bytes.append(&mut as_bytes.to_vec());
         return Ok(len_as_bytes);
     }
-    /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
     pub fn boolean_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
         let byte = read_byte(reader)?;
         if byte == 0x00 {
@@ -1069,9 +1071,7 @@ pub mod generalized {
         }
         return Err(Error::InvalidBool);
     }
-    /// Woefully unnessicary. Seriously, bools are just 0x00 or 0x01.
-    /// Side note: this function will always read just a single byte, making half of the
-    /// return type pointless.
+    /// This function will always read just a single byte.
     pub fn boolean_from_bytes(bytes: &[u8]) -> Result<(bool, usize), Error> {
         if bytes.len() < 1 {
             return Err(Error::MissingData);
@@ -1104,7 +1104,7 @@ pub mod generalized {
         }
         return Ok(());
     }
-    /// What's wrong with you? This isn't something you should need or use. It's one byte. It's not
+    /// This isn't something you should need or use. It's one byte. It's not
     /// even possible to get an error here.
     pub fn boolean_to_bytes(data: bool) -> Result<Vec<u8>, Error> {
         if data {

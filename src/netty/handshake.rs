@@ -3,16 +3,23 @@ use std::io::Read;
 use crate::generalized::{string_from_reader, unsigned_short_from_reader, string_to_bytes_no_cesu8};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// A packet sent from the client to the server during the "handshake" phase.
 pub enum ServerboundPacket {
+    /// Indicates to the server what this connection is for.
     Handshake {
+        /// The version of the netty protocol being used ([crate::PROTOCOL_VERSION])
         protocol_version: VarInt,
         server_address: String,
         server_port: u16,
+        /// Which network state both the client and server should switch to
+        /// after this packet.
         next_state: NextState,
     }
 }
 
 impl ServerboundPacket {
+    /// Converts this packet into bytes that can be sent over the network to a
+    /// server using this protocol version.
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
         match self {
@@ -35,6 +42,7 @@ impl ServerboundPacket {
         result.append(&mut bytes);
         return Ok(result);
     }
+    /// Deserializes a packet from a [Read] type
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let _packet_length = VarInt::from_reader(reader)?;
         let packet_id = VarInt::from_reader(reader)?;
