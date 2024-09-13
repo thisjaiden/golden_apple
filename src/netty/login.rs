@@ -359,7 +359,79 @@ impl ClientboundPacket {
         let packet_length = VarInt::from_reader(reader)?;
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
-            0x00..0x05 => todo!(),
+            0x00 => {
+                let reason = string_from_reader_no_cesu8(reader)?;
+                
+                return Ok(Self::Disconnect { reason });
+            }
+            0x01 => {
+                let server_id = string_from_reader_no_cesu8(reader)?;
+
+                let public_key_len = VarInt::from_reader(reader)?;
+                let mut public_key = vec![0x00; public_key_len.value() as usize];
+                reader.read_exact(&mut public_key)?;
+
+                let verify_token_len = VarInt::from_reader(reader)?;
+                let mut verify_token = vec![0x00; verify_token_len.value() as usize];
+                reader.read_exact(&mut verify_token)?;
+
+                let should_authenticate = boolean_from_reader(reader)?;
+                
+                return Ok(Self::EncryptionRequest {
+                    server_id, public_key, verify_token, should_authenticate
+                });
+            }
+            0x02 => {
+                let uuid = UUID::from_reader(reader)?;
+                let username = string_from_reader_no_cesu8(reader)?;
+
+                let properties_len = VarInt::from_reader(reader)?.value();
+                let mut properties = vec![];
+
+                for _ in 0..properties_len {
+                    let name = string_from_reader_no_cesu8(reader)?;
+                    let value = string_from_reader_no_cesu8(reader)?;
+                    let is_signed = boolean_from_reader(reader)?;
+                    let signature = if is_signed {
+                        Some(string_from_reader_no_cesu8(reader)?) 
+                    } else { None };
+                    let property = Property { name, value, signature };
+                    properties.push(property);
+                }
+
+                let strict_error_handling = boolean_from_reader(reader)?;
+
+                return Ok(Self::LoginSuccess {
+                    uuid, username, properties, strict_error_handling
+                });
+            }
+            0x03 => {
+                let threshold = VarInt::from_reader(reader)?;
+
+                return Ok(Self::SetCompression { threshold });
+            }
+            0x04 => {
+                let message_id = VarInt::from_reader(reader)?;
+                let channel = Identifier::from_reader(reader)?;
+                // These unwraps are safe: we just pulled this data and know it
+                // must have a read size value!
+                let data_len = 
+                    packet_length.value() as usize -
+                    packet_id.read_size().unwrap() as usize -
+                    message_id.read_size().unwrap() as usize -
+                    channel.to_bytes()?.len();
+                
+                let mut data = vec![0x00; data_len];
+
+                reader.read_exact(&mut data)?;
+
+                return Ok(Self::LoginPluginRequest { message_id, channel, data });
+            }
+            0x05 => {
+                let key = Identifier::from_reader(reader)?;
+
+                return Ok(Self::CookieRequest { key });
+            },
             _ => {
                 return Err(Error::InvalidPacketId);
             }

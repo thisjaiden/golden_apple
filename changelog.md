@@ -40,7 +40,7 @@
 ### Ecosystem
 
 - Updated dependencies to the latest versions:
-  - `serde` 1.0.207 -> 1.0.209
+  - `serde` 1.0.207 -> 1.0.210
   - `serde_json` 1.0.124 -> 1.0.128
   - `reqwest` 0.12.5 -> 0.12.7
 
