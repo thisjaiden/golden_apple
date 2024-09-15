@@ -30,6 +30,7 @@
 - `Identifier`'s `.to_string()` and `.to_bytes()` now both take a refrence to self instead of taking self directly.
 - `Identifier::to_bytes` no longer converts to Java's "Modified UTF-8."
 - `VarInt` and `VarLong` both now have a `read_size` proprety, which returns the amount of bytes needed to read the value from a datastream, if it was aquired that way.
+- Likewise, `VarInt` has a `calculate_read_size` property, which forces a calculation of the amount of bytes needed to read/write the value from a datastream, allowing `read_size` to be used on `VarInt`s made using `VarInt::from_value`.
 - The following functions have been updated to convert to and from "normal" UTF-8 strings and Java's "Modified UTF-8:"
   - `generalized::string_from_bytes`
   - `generalized::string_from_reader`
@@ -43,6 +44,7 @@
   - `serde` 1.0.207 -> 1.0.210
   - `serde_json` 1.0.124 -> 1.0.128
   - `reqwest` 0.12.5 -> 0.12.7
+- Includes a new library `flate2` for gzip compression done in later stages of networking.
 
 ## 0.19.0
 

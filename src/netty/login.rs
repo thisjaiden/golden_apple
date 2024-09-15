@@ -3,6 +3,7 @@ use crate::generalized::{boolean_from_reader, string_from_reader_no_cesu8, strin
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// A packet sent from the client to the server during the "login" phase.
 pub enum ServerboundPacket {
     LoginStart {
         name: String,
@@ -26,6 +27,7 @@ pub enum ServerboundPacket {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// A packet sent from the server to the client during the "login" phase.
 pub enum ClientboundPacket {
     Disconnect {
         reason: String // TODO: https://wiki.vg/Protocol#Type:JSON_Text_Component
@@ -64,7 +66,19 @@ pub struct Property {
 
 
 impl ServerboundPacket {
+    /// Converts this packet into bytes that can be sent over the network to a
+    /// server using this protocol version.
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut packet_bytes = self.to_most_bytes()?;
+        // Calculate packet length, prepend, and send it!
+        let packet_length = packet_bytes.len();
+        let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
+        result.append(&mut packet_bytes);
+        return Ok(result);
+    }
+    /// Converts the packet to bytes in the proper format for networking with
+    /// traditional Minecraft software *minus* the packet length being prepended.
+    fn to_most_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
         match self {
             Self::LoginStart { name, uuid } => {
@@ -136,15 +150,60 @@ impl ServerboundPacket {
                 }
             }
         }
-        // Calculate packet length, prepend, and send it!
-        let packet_length = bytes.len();
-        let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
-        result.append(&mut bytes);
-        return Ok(result);
+        return Ok(bytes);
     }
-    /// Not done! Please wait for this to be finished or open a PR!
+    /// Converts this packet into bytes that can be sent over the network to a
+    /// server using this protocol version, once compression has been enabled.
+    /// Only use this method after recieving
+    /// [crate::netty::login::ClientboundPacket::SetCompression]. Even if a
+    /// packet isn't encrypted, the format is slightly different.
+    // TODO: test that this is compliant and works
     pub fn to_bytes_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
-        todo!()
+        // Get packet data.
+        let mut packet_bytes = self.to_most_bytes()?;
+        // Calculate packet length.
+        let packet_length = packet_bytes.len();
+
+        // If it's below the packet compression threshold,
+        if packet_length < threshold.value() as usize {
+            // Prepend length and send it off!
+            // We add 1 to `packet_length` to account for the compression length.
+            // (which is zero, but encodes as one byte)
+            let mut result = VarInt::from_value(packet_length as i32 + 1)?.to_bytes()?;
+            // Insert the compression length (0)
+            result.push(0x00);
+            // Add the rest of the packet
+            result.append(&mut packet_bytes);
+            return Ok(result);
+        }
+        else {
+            // Otherwise, we need to compress the packet.
+            use std::io::prelude::*;
+            use flate2::Compression;
+            use flate2::write::ZlibEncoder;
+            // TODO: allow the user to select the compression type.
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
+            // TODO: be more specific with the errors coming off of these `?`s.
+            encoder.write(&packet_bytes)?;
+            let mut compressed_data = encoder.finish()?;
+
+            // Put the length of the compressed section of the packet into this VarInt
+            let mut compressed_data_length = VarInt::from_value(compressed_data.len() as i32)?;
+            compressed_data_length.calculate_read_size();
+
+            // Prepend the value of (compressed data length + compressed data
+            // length length).
+            // Safe unwrap, since we just did `.calculate_read_size()`.
+            let mut result = VarInt::from_value(
+                compressed_data_length.value() +
+                compressed_data_length.read_size().unwrap() as i32
+            )?.to_bytes()?;
+            // Prepend compressed data length
+            result.append(&mut compressed_data_length.to_bytes()?);
+            // Add the rest of the packet
+            result.append(&mut compressed_data);
+            return Ok(result);
+        }
     }
     /// Not done! Please wait for this to be finished or open a PR!
     pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
@@ -221,7 +280,7 @@ impl ServerboundPacket {
                 }
             },
             _ => {
-                return Err(Error::InvalidPacketId);
+                return Err(Error::InvalidPacketId(packet_id));
             }
         }
     }
@@ -240,7 +299,9 @@ impl ServerboundPacket {
 }
 
 impl ClientboundPacket {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    /// Converts the packet to bytes in the proper format for networking with
+    /// traditional Minecraft software *minus* the packet length being prepended.
+    fn to_most_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
         match self {
             Self::Disconnect { reason } => {
@@ -337,15 +398,70 @@ impl ClientboundPacket {
                 bytes.append(&mut key.to_bytes()?);
             }
         }
+        return Ok(bytes);
+    }
+    /// Converts this packet into bytes that can be sent over the network to a
+    /// client using this protocol version.
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut packet_bytes = self.to_most_bytes()?;
         // Calculate packet length, prepend, and send it!
-        let packet_length = bytes.len();
+        let packet_length = packet_bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
-        result.append(&mut bytes);
+        result.append(&mut packet_bytes);
         return Ok(result);
     }
-    /// Not done! Please wait for this to be finished or open a PR!
+    /// Converts this packet into bytes that can be sent over the network to a
+    /// client using this protocol version, once compression has been enabled.
+    /// Only use this method after sending
+    /// [crate::netty::login::ClientboundPacket::SetCompression]. Even if a
+    /// packet isn't encrypted, the format is slightly different.
+    // TODO: test that this is compliant and works
     pub fn to_bytes_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
-        todo!()
+        // Get packet data.
+        let mut packet_bytes = self.to_most_bytes()?;
+        // Calculate packet length.
+        let packet_length = packet_bytes.len();
+
+        // If it's below the packet compression threshold,
+        if packet_length < threshold.value() as usize {
+            // Prepend length and send it off!
+            // We add 1 to `packet_length` to account for the compression length.
+            // (which is zero, but encodes as one byte)
+            let mut result = VarInt::from_value(packet_length as i32 + 1)?.to_bytes()?;
+            // Insert the compression length (0)
+            result.push(0x00);
+            // Add the rest of the packet
+            result.append(&mut packet_bytes);
+            return Ok(result);
+        }
+        else {
+            // Otherwise, we need to compress the packet.
+            use std::io::prelude::*;
+            use flate2::Compression;
+            use flate2::write::ZlibEncoder;
+            // TODO: allow the user to select the compression type.
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
+            // TODO: be more specific with the errors coming off of these `?`s.
+            encoder.write(&packet_bytes)?;
+            let mut compressed_data = encoder.finish()?;
+
+            // Put the length of the compressed section of the packet into this VarInt
+            let mut compressed_data_length = VarInt::from_value(compressed_data.len() as i32)?;
+            compressed_data_length.calculate_read_size();
+
+            // Prepend the value of (compressed data length + compressed data
+            // length length).
+            // Safe unwrap, since we just did `.calculate_read_size()`.
+            let mut result = VarInt::from_value(
+                compressed_data_length.value() +
+                compressed_data_length.read_size().unwrap() as i32
+            )?.to_bytes()?;
+            // Prepend compressed data length
+            result.append(&mut compressed_data_length.to_bytes()?);
+            // Add the rest of the packet
+            result.append(&mut compressed_data);
+            return Ok(result);
+        }
     }
     /// Not done! Please wait for this to be finished or open a PR!
     pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
@@ -433,7 +549,7 @@ impl ClientboundPacket {
                 return Ok(Self::CookieRequest { key });
             },
             _ => {
-                return Err(Error::InvalidPacketId);
+                return Err(Error::InvalidPacketId(packet_id));
             }
         }
     }

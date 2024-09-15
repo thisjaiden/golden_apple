@@ -39,12 +39,13 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 
 - Metadata
 - Slot
-- Netty (~10%)
+- Netty (11.9%)
 - Other General Enums (~50%)
 
 ## Version Support
 
 [Changelog](changelog.md)
+
 |  Crate version  | Minecraft version | Minecraft Protocol ID |
 | --------------- | ----------------- | --------------------- |
 | 0.18.0 - 0.19.0 | 1.21.0 - 1.21.1   | 767                   |

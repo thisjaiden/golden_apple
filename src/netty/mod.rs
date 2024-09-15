@@ -60,6 +60,21 @@ impl ClientboundPacket {
             _ => todo!()
         }
     }
+    pub fn from_reader_com<R: std::io::Read>(
+        reader: &mut R, protocol_state: ProtocolState
+    ) -> Result<Self, crate::Error> {
+        match protocol_state {
+            ProtocolState::Handshake | ProtocolState::Status => {
+                panic!("It's not possible for packets to be compressed during these stages of networking!");
+            },
+            ProtocolState::Login => {
+                return Ok(ClientboundPacket::Login(
+                    login::ClientboundPacket::from_reader_enc(reader)?
+                ));
+            }
+            _ => todo!()
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]

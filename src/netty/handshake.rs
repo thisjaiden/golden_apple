@@ -57,7 +57,7 @@ impl ServerboundPacket {
                 });
             }
             _ => {
-                return Err(Error::InvalidPacketId);
+                return Err(Error::InvalidPacketId(packet_id));
             }
         }
     }
@@ -77,7 +77,8 @@ pub enum NextState {
 impl TryFrom<VarInt> for NextState {
     type Error = Error;
     fn try_from(value: VarInt) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
+        return num_traits::FromPrimitive::from_i32(value.value())
+            .ok_or(Error::EnumOutOfBound);
     }
 }
 

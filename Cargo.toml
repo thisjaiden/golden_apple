@@ -17,6 +17,7 @@ reqwest = { version = "0.12.7", features = ["blocking"] }
 num-traits = "0.2.19"
 num-derive = "0.4.2"
 cesu8 = "1.1.0"
+flate2 = "1.0.33"
 
 [build-dependencies]
 serde = { version = "1.0.210", features = ["derive"] }

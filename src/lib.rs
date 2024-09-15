@@ -43,7 +43,7 @@ pub enum Error {
     /// A Java UTF-8 string was unable to be converted to "normal" UTF-8.
     InvalidJavaUtf8(cesu8::Cesu8DecodingError),
     /// A Netty packet had an invalid packet ID.
-    InvalidPacketId,
+    InvalidPacketId(VarInt),
     /// A generic IO error was thrown.
     IoError(std::io::Error),
     /// An attempt was made to read or parse a packet destined for the client
@@ -648,6 +648,14 @@ impl VarInt {
     }
     pub fn read_size(&self) -> Option<u8> {
         self.read_size
+    }
+    /// Calculates the size of this [VarInt] when encoded in bytes. Stores the
+    /// value in this type so that you can use [VarInt::read_size].
+    pub fn calculate_read_size(&mut self) {
+        // TODO: this is gross. do better.
+        let bytes = self.to_bytes().unwrap();
+        let val = VarInt::from_bytes(&bytes).unwrap().0;
+        self.read_size = val.read_size;
     }
 }
 
