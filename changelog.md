@@ -4,7 +4,7 @@
 
 ### Netty
 
-- The `netty` module is a new module with types and tools for communicating with standard minecraft servers and clients. As of now, it only supports the handshake/status/login phases of networking.
+- The `netty` module is a new module with types and tools for communicating with standard minecraft servers and clients. As of now, it only supports the handshake/status/login phases of networking. Encryption support is not yet ready.
 - `enums::ProtocolState` is now `netty::ProtocolState`
 - `netty::ProtocolState` has been updated to support the "configuration" protocol state.
 - `enums::NextState` is now `netty::handshake::NextState`.

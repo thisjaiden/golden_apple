@@ -42,6 +42,10 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 - Netty (11.9%)
 - Other General Enums (~50%)
 
+## Cargo Features
+
+There is one Cargo feature flag for this crate, `encryption`. It is not complete at this time and currently does nothing. Eventually, this will enable methods for handling packets when encryption is enabled between the server and client.
+
 ## Version Support
 
 [Changelog](changelog.md)

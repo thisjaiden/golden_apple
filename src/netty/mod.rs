@@ -14,9 +14,10 @@ pub mod status;
 /// during the "login" stage of a connection. This is the stage at which
 /// compression and encryption may be enabled, so all conversion tools will have
 /// the following variants:
-/// - `_enc` Encrypted
 /// - `_com` Compressed
-/// - `_enc_com` Encrypted & Compressed
+/// - `_enc` Encrypted
+/// - `_enc_com` Encrypted & Compressed  
+/// The variants including encryption require the `encryption` cargo feature.
 pub mod login;
 
 
@@ -69,7 +70,7 @@ impl ClientboundPacket {
             },
             ProtocolState::Login => {
                 return Ok(ClientboundPacket::Login(
-                    login::ClientboundPacket::from_reader_enc(reader)?
+                    login::ClientboundPacket::from_reader_com(reader)?
                 ));
             }
             _ => todo!()

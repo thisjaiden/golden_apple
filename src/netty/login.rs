@@ -59,9 +59,9 @@ pub enum ClientboundPacket {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Property {
-    name: String,
-    value: String,
-    signature: Option<String>
+    pub name: String,
+    pub value: String,
+    pub signature: Option<String>
 }
 
 
@@ -206,15 +206,21 @@ impl ServerboundPacket {
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
         todo!()
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn to_bytes_enc_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
         todo!()
     }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
+        
+        return Self::from_reader_internal(reader, packet_length);
+    }
+    fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
             0x00 => {
@@ -285,14 +291,43 @@ impl ServerboundPacket {
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn from_reader_enc<R: Read>(reader: &mut R) -> Result<Self, Error> {
         todo!()
     }
-    /// Not done! Please wait for this to be finished or open a PR!
+    /// Reads a packet from a [Read] type that is sent to a server using this
+    /// protocol version. Expects that compression has been enabled. Only use
+    /// this method after recieving
+    /// [crate::netty::login::ClientboundPacket::SetCompression]. Even if a
+    /// packet isn't encrypted, the format is slightly different.
+    // TODO: test that this is compliant and works. This is pretty gross, could
+    // use some cleanup too.
     pub fn from_reader_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
-        todo!()
+        let remaining_len = VarInt::from_reader(reader)?;
+        let compressed_len = VarInt::from_reader(reader)?;
+        if compressed_len.value() == 0 {
+            // Packet is not compressed.
+            return Self::from_reader_internal(reader, VarInt::from_value(remaining_len.value() - compressed_len.read_size().unwrap() as i32)?);
+        }
+        else {
+            // Packet is compressed. Grab all data...
+            let mut packet_data = vec![0x00; remaining_len.value() as usize - compressed_len.read_size().unwrap() as usize];
+            reader.read_exact(&mut packet_data)?;
+            // Add a decoding wrapper...
+            let mut decoded =
+                flate2::bufread::ZlibDecoder::new(packet_data.as_ref());
+            // And interpret the packet.
+            return Self::from_reader_internal(
+                &mut decoded,
+                VarInt::from_value(
+                    remaining_len.value() -
+                    compressed_len.read_size().unwrap() as i32
+                )?
+            );
+        }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn from_reader_enc_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
         todo!()
     }
@@ -464,15 +499,21 @@ impl ClientboundPacket {
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn to_bytes_enc(&self) -> Result<Vec<u8>, Error> {
         todo!()
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn to_bytes_enc_com(&self, threshold: VarInt) -> Result<Vec<u8>, Error> {
         todo!()
     }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
+        
+        return Self::from_reader_internal(reader, packet_length);
+    }
+    fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
             0x00 => {
@@ -554,14 +595,43 @@ impl ClientboundPacket {
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn from_reader_enc<R: Read>(reader: &mut R) -> Result<Self, Error> {
         todo!()
     }
-    /// Not done! Please wait for this to be finished or open a PR!
+    /// Reads a packet from a [Read] type that is sent to a server using this
+    /// protocol version. Expects that compression has been enabled. Only use
+    /// this method after sending
+    /// [crate::netty::login::ClientboundPacket::SetCompression]. Even if a
+    /// packet isn't encrypted, the format is slightly different.
+    // TODO: test that this is compliant and works. This is pretty gross, could
+    // use some cleanup too.
     pub fn from_reader_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
-        todo!()
+        let remaining_len = VarInt::from_reader(reader)?;
+        let compressed_len = VarInt::from_reader(reader)?;
+        if compressed_len.value() == 0 {
+            // Packet is not compressed.
+            return Self::from_reader_internal(reader, VarInt::from_value(remaining_len.value() - compressed_len.read_size().unwrap() as i32)?);
+        }
+        else {
+            // Packet is compressed. Grab all data...
+            let mut packet_data = vec![0x00; remaining_len.value() as usize - compressed_len.read_size().unwrap() as usize];
+            reader.read_exact(&mut packet_data)?;
+            // Add a decoding wrapper...
+            let mut decoded =
+                flate2::bufread::ZlibDecoder::new(packet_data.as_ref());
+            // And interpret the packet.
+            return Self::from_reader_internal(
+                &mut decoded,
+                VarInt::from_value(
+                    remaining_len.value() -
+                    compressed_len.read_size().unwrap() as i32
+                )?
+            );
+        }
     }
     /// Not done! Please wait for this to be finished or open a PR!
+    #[cfg(feature = "encryption")]
     pub fn from_reader_enc_com<R: Read>(reader: &mut R) -> Result<Self, Error> {
         todo!()
     }
