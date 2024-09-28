@@ -59,101 +59,29 @@ impl std::fmt::Display for Error {
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Error {
-        return Error::JsonParsingError(e);
+        Error::JsonParsingError(e)
     }
 }
 
 impl From<std::num::ParseIntError> for Error {
     fn from(e: std::num::ParseIntError) -> Error {
-        return Error::InvalidUuid(e);
+        Error::InvalidUuid(e)
     }
 }
 
 impl From<cesu8::Cesu8DecodingError> for Error {
     fn from(e: cesu8::Cesu8DecodingError) -> Error {
-        return Error::InvalidJavaUtf8(e);
+        Error::InvalidJavaUtf8(e)
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
-        return Error::IoError(e);
+        Error::IoError(e)
     }
 }
 
 impl std::error::Error for Error {}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct StatusResponse {
-    pub version_name: String,
-    pub version_protocol: i64,
-    pub max_players: i64,
-    pub online_players: i64,
-    pub favicon_data: String,
-    pub sample_players: Vec<(String, UUID)>,
-    pub description: Chat
-}
-
-impl StatusResponse {
-    pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<StatusResponse, Error> {
-        let raw_data = generalized::string_from_reader(reader)?;
-        let json_data: serde_json::Value = serde_json::from_str(&raw_data)?;
-        return Ok(StatusResponse {
-            version_name: json_data["version"]["name"].to_string(),
-            version_protocol: json_data["version"]["protocol"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            max_players: json_data["players"]["max"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            online_players: json_data["players"]["online"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            description: Chat::from_string(serde_json::to_string(&json_data["description"])?)?,
-            favicon_data:
-                json_data["favicon"]
-                    .as_str()
-                    .ok_or(Error::InvalidJsonRoot)?
-                    .to_string()
-                    .trim_start_matches("data:image/png;base64,")
-                    .to_string(),
-            sample_players:
-                json_data["players"]["sample"]
-                    .as_array()
-                    .ok_or(Error::InvalidJsonRoot)
-                    .map(|dta| {
-                        let mut final_data = vec![];
-                        for pair in dta {
-                            final_data.push((pair["name"].to_string(), UUID::from_username(pair["id"].to_string()).unwrap()));
-                        }
-                        return final_data;
-                    })?
-        });
-    }
-    pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
-        let mut string_data = String::new();
-        string_data += "{\"version\":{\"name\":\"";
-        string_data += &self.version_name;
-        string_data += "\",\"protocol\":";
-        string_data += &format!("{}", self.version_protocol);
-        string_data += "},\"players\":{\"max\":";
-        string_data += &format!("{}", self.max_players);
-        string_data += ",\"online\":";
-        string_data += &format!("{}", self.online_players);
-        string_data += "\"sample\":[";
-        let mut sample_index = false;
-        for player in self.sample_players.clone() {
-            if sample_index {
-                string_data += ",";
-            }
-            string_data += "{\"name\":\"";
-            string_data += &player.0;
-            string_data += "\",\"id\":\"";
-            string_data += &format!("{:x}", player.1.to_value()?);
-            string_data += "}";
-            sample_index = true;
-        }
-        string_data += "]},\"description\":";
-        string_data += ",\"favicon\":\"data:image/png;base64,";
-        string_data += &self.favicon_data;
-        string_data += "\"}";
-        generalized::string_to_writer(writer, string_data)
-    }
-}
 
 /// Represents a Unique User ID. Used to track players and entities.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -165,22 +93,21 @@ pub struct UUID {
 impl UUID {
     /// Generates a UUID from a Read type.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<UUID, Error> {
-        return Ok(Self::from_bytes(&read_bytes::<_, 16>(reader)?)?.0);
+        Ok(Self::from_bytes(&read_bytes::<_, 16>(reader)?)?.0)
     }
     /// Generates a UUID from a byte array. Returns the UUID and amount of bytes needed.
     pub fn from_bytes(data: &[u8]) -> Result<(UUID, usize), Error> {
         if data.len() < 16 {
             return Err(Error::MissingData);
         }
-        let mut array = [0;16];
-        for i in 0..16 {
-            array[i] = data[i];
-        }
-        return Ok((Self::from_value(u128::from_be_bytes(array))?, 16));
+        let mut array = [0; 16];
+        array.copy_from_slice(&data[..16]);
+
+        Ok((Self::from_value(u128::from_be_bytes(array))?, 16))
     }
     /// Generates a UUID from a given value.
     pub fn from_value(value: u128) -> Result<UUID, Error> {
-        return Ok(UUID { value });
+        Ok(UUID { value })
     }
     /// Generates a UUID from a username. This function uses Mojang's API, and may be subject to
     /// rate limiting. Cache your results.
@@ -188,7 +115,13 @@ impl UUID {
         use reqwest::blocking::get;
         let raw_response = get(format!("https://api.mojang.com/users/profiles/minecraft/{}", username)).unwrap().text().unwrap();
         let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
-        return Self::from_value(u128::from_str_radix(&json_response["id"].as_str().ok_or(Error::InvalidJsonRoot)?, 16)?);
+
+        Self::from_value(
+            u128::from_str_radix(
+                json_response["id"].as_str().ok_or(Error::InvalidJsonRoot)?,
+                16
+            )?
+        )
     }
     /// Writes this UUID to a Write type.
     pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
@@ -198,15 +131,16 @@ impl UUID {
                 return Err(Error::WriterError(e));
             }
         }
-        return Ok(());
+
+        Ok(())
     }
     /// Creates a byte array with the data of this UUID in it.
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
-        return Ok(self.value.to_be_bytes().to_vec());
+        Ok(self.value.to_be_bytes().to_vec())
     }
     /// Gives the underlying value of this UUID.
     pub fn to_value(self) -> Result<u128, Error> {
-        return Ok(self.value);
+        Ok(self.value)
     }
     /// Gives the username associated with this UUID. This function uses Mojang's API, and may be
     /// subject to rate limiting. Cache your results.
@@ -220,7 +154,8 @@ impl UUID {
         let raw_response = get(format!("https://sessionserver.mojang.com/session/minecraft/profile/{}", insertable)).unwrap().text().unwrap();
         let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
         let name = json_response["name"].as_str().ok_or(Error::InvalidJsonType)?;
-        return Ok(name.to_string());
+
+        Ok(name.to_string())
     }
 }
 
@@ -294,20 +229,21 @@ pub struct HoverEvent {
 impl Chat {
     pub fn from_bytes(data: &[u8]) -> Result<(Chat, usize), Error> {
         let string_data = generalized::string_from_bytes(data)?;
-        return Ok((Self::from_string(string_data.0)?, string_data.1));
+
+        Ok((Self::from_string(string_data.0)?, string_data.1))
     }
     pub fn from_reader<R: std::io::Read>(read: &mut R) -> Result<Chat, Error> {
-        return Self::from_string(generalized::string_from_reader(read)?);
+        Self::from_string(generalized::string_from_reader(read)?)
     }
     pub fn from_string(data: String) -> Result<Chat, Error> {
         let structure: serde_json::Value = serde_json::from_str(&data)?;
         if structure.is_object() {
-            return Ok(Chat {
+            Ok(Chat {
                 component: serde_json::from_str(&data)?
-            });
+            })
         }
         else if structure.is_array() {
-            return Ok(Chat {
+            Ok(Chat {
                 component: ChatComponent {
                     text: None,
                     translate: None,
@@ -325,10 +261,10 @@ impl Chat {
                     hoverEvent: None,
                     extra: serde_json::from_str(&data)?
                 }
-            });
+            })
         }
         else if structure.is_string() {
-            return Ok(Chat {
+            Ok(Chat {
                 component: ChatComponent {
                     text: serde_json::from_str(&data)?,
                     translate: None,
@@ -346,10 +282,10 @@ impl Chat {
                     hoverEvent: None,
                     extra: None
                 }
-            });
+            })
         }
         else {
-            return Err(Error::InvalidJsonRoot);
+            Err(Error::InvalidJsonRoot)
         }
     }
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
@@ -365,9 +301,12 @@ impl Chat {
 }
 
 
-/// Provides tools for reading, writing, and managing the various enums that Minecraft uses.
-/// Many of these enums contain descriptions of their respective attributes in quotes. This
-/// indicates that the information is taken directly from <https://wiki.vg/Protocol_FAQ>
+/// Provides tools for reading, writing, and managing the various enums that
+/// Minecraft uses.
+/// 
+/// Many of these enums contain descriptions of their respective attributes in
+/// quotes. This indicates that the information is taken directly from
+/// [wiki.vg](https://wiki.vg/Protocol_FAQ).
 pub mod enums;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -381,11 +320,12 @@ impl Identifier {
     /// Creates a new Identifier using a stream of bytes. Returns how many bytes were used.
     pub fn from_bytes(bytes: &[u8]) -> Result<(Identifier, usize), Error> {
         let raw_parts = generalized::string_from_bytes(bytes)?;
-        return Ok((Identifier::from_string(raw_parts.0)?, raw_parts.1));
+
+        Ok((Identifier::from_string(raw_parts.0)?, raw_parts.1))
     }
     /// Creates a new Identifier from a Read type.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Identifier, Error> {
-        return Ok(Identifier::from_string(generalized::string_from_reader(reader)?)?);
+        Ok(Identifier::from_string(generalized::string_from_reader(reader)?)?)
     }
     /// Creates a new Identifier from a String.
     pub fn from_string(string: String) -> Result<Identifier, Error> {
@@ -394,46 +334,48 @@ impl Identifier {
             whole_chunks.push(chunk);
         }
         if whole_chunks.len() > 2 {
-            return Err(Error::InvalidIdentifier);
+            Err(Error::InvalidIdentifier)
         }
         else if whole_chunks.len() < 2 {
-            return Ok(Identifier {
+            Ok(Identifier {
                 namespace: String::from("minecraft"),
                 selector: String::from(whole_chunks[0])
-            });
+            })
         }
         else {
-            return Ok(Identifier {
+            Ok(Identifier {
                 namespace: String::from(whole_chunks[0]),
                 selector: String::from(whole_chunks[1])
-            });
+            })
         }
     }
     /// Writes this Identifier to a series of bytes.
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        return Ok(generalized::string_to_bytes_no_cesu8(self.to_string()?)?);
+        Ok(generalized::string_to_bytes_no_cesu8(self.to_string()?)?)
     }
     /// Writes this Identifier to a Write type.
     pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
         generalized::string_to_writer(writer, self.to_string()?)?;
-        return Ok(());
+
+        Ok(())
     }
-    /// Writes this Identifier to a String. Always writes in the extended format for selectors under
-    /// the `minecraft` namespace.
+    /// Writes this Identifier to a String. Always writes in the extended format
+    /// for selectors under the `minecraft` namespace.
     pub fn to_string(&self) -> Result<String, Error> {
         let mut full_string = String::new();
         full_string += &self.namespace;
         full_string += ":";
         full_string += &self.selector;
-        return Ok(full_string);
+
+        Ok(full_string)
     }
     /// Get the namespace of this Identifier. This is the part before the colon.
     pub fn get_namespace(self) -> String {
-        return self.namespace;
+        self.namespace
     }
     /// Get the selector of this Identifier. This is the part after the colon.
     pub fn get_selector(self) -> String {
-        return self.selector;
+        self.selector
     }
 }
 
@@ -448,10 +390,11 @@ impl Angle {
     /// Creates a new `Angle` using a byte. The byte is expected to reperesent how many 256ths of a
     /// full turn this angle represents. Always uses a single byte.
     pub fn from_bytes(bytes: &[u8]) -> Result<(Angle, usize), Error> {
-        if bytes.len() < 1 {
+        if bytes.is_empty() {
             return Err(Error::MissingData);
         }
-        return Ok((Angle { value: bytes[0] }, 1));
+
+        Ok((Angle { value: bytes[0] }, 1))
     }
     /// Creates a new `Angle` that is the given amount of degrees. Absoulte value is taken for
     /// negative values. Values over a full turn have the amount of turns discarded. Some
@@ -464,9 +407,10 @@ impl Angle {
         while workable > 360.0 {
             workable -= 360.0;
         }
-        return Angle {
+
+        Angle {
             value: ((workable / 360.0) * 256.0) as u8
-        };
+        }
     }
     /// Creates a new `Angle` that is the given amount of radians. Absoulte value is taken for
     /// negative values. Values over a full turn have the amount of turns discarded. Some
@@ -479,26 +423,27 @@ impl Angle {
         while workable > 2.0 * PI {
             workable -= 2.0 * PI;
         }
-        return Angle {
+
+        Angle {
             value: ((workable / (2.0 * PI)) * 256.0) as u8
-        };
+        }
     }
     /// Returns how many 256ths of a full turn this angle represents. This is the data's actual
     /// format, and the most exact representation.
     pub fn as_256ths(self) -> u8 {
-        return self.value;
+        self.value
     }
     /// Returns how many degrees this angle represents.
     pub fn to_degrees(self) -> f64 {
-        return ((self.as_256ths() as f64) / 256.0) * 360.0;
+        ((self.as_256ths() as f64) / 256.0) * 360.0
     }
     /// Returns how many radians this angle represents.
     pub fn to_radians(self) -> f64 {
-        return self.to_degrees() * (PI/180.0);
+        self.to_degrees() * (PI / 180.0)
     }
     /// Encodes this angle as a byte representing how many 256ths of a full turn this angle is.
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
-        return Ok(vec![self.value]);
+        Ok(vec![self.value])
     }
 }
 
@@ -517,19 +462,14 @@ impl std::fmt::Display for VarInt {
 
 impl PartialEq for VarInt {
     fn eq(&self, other: &Self) -> bool {
-        if self.value == other.value {
-            return true;
-        }
-        else {
-            return false;
-        }
+        self.value == other.value
     }
 }
 
 impl VarInt {
     /// Returns the value of a given VarInt
     pub fn value(self) -> i32 {
-        return self.value;
+        self.value
     }
     /// Creates a VarInt from a series of bytes. Returns the value and the amount of bytes used if
     /// creation is successful.
@@ -563,7 +503,7 @@ impl VarInt {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::from_bytes reached end of function, which should not be possible");
+        unreachable!("VarInt::from_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarInt from a reader containing bytes.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<VarInt, Error> {
@@ -587,7 +527,7 @@ impl VarInt {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::from_reader reached end of function, which should not be possible");
+        unreachable!("VarInt::from_reader reached end of function, which should not be possible");
     }
     /// Writes a VarInt to a writer as a series of bytes.
     pub fn to_writer<W: std::io::Write>(&mut self, writer: &mut W) -> Result<(), Error> {
@@ -618,7 +558,7 @@ impl VarInt {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::to_writer reached end of function, which should not be possible");
+        unreachable!("VarInt::to_writer reached end of function, which should not be possible");
     } 
     /// Converts a VarInt to a series of bytes.
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
@@ -640,7 +580,7 @@ impl VarInt {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::to_bytes reached end of function, which should not be possible");
+        unreachable!("VarInt::to_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarInt from a given value.
     pub fn from_value(value: i32) -> Result<VarInt, Error> {
@@ -675,19 +615,14 @@ impl std::fmt::Display for VarLong {
 
 impl PartialEq for VarLong {
     fn eq(&self, other: &Self) -> bool {
-        if self.value == other.value {
-            return true;
-        }
-        else {
-            return false;
-        }
+        self.value == other.value
     }
 }
 
 impl VarLong {
     /// Returns the value of a given VarLong
     pub fn value(self) -> i64 {
-        return self.value;
+        self.value
     }
     /// Creates a VarLong from a series of bytes. Returns the value and the amount of bytes used if
     /// creation is successful.
@@ -721,7 +656,7 @@ impl VarLong {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarLong::from_bytes reached end of function, which should not be possible");
+        unreachable!("VarLong::from_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarLong from a reader containing bytes.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<VarLong, Error> {
@@ -745,7 +680,7 @@ impl VarLong {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarLong::from_reader reached end of function, which should not be possible");
+        unreachable!("VarLong::from_reader reached end of function, which should not be possible");
     }
     /// Writes a VarLong to a writer as a series of bytes.
     pub fn to_writer<W: std::io::Write>(&mut self, writer: &mut W) -> Result<(), Error> {
@@ -776,7 +711,7 @@ impl VarLong {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarInt::to_writer reached end of function, which should not be possible");
+        unreachable!("VarLong::to_writer reached end of function, which should not be possible");
     } 
     /// Converts a VarLong to a series of bytes.
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
@@ -798,7 +733,7 @@ impl VarLong {
             }
         }
         // This will never occur.
-        panic!("golden_apple::VarLong::to_bytes reached end of function, which should not be possible");
+        unreachable!("VarLong::to_bytes reached end of function, which should not be possible");
     }
     /// Creates a VarLong from a given value.
     pub fn from_value(value: i64) -> Result<VarLong, Error> {
@@ -829,16 +764,17 @@ impl std::fmt::Display for Position {
 impl Position {
     /// Returns the x coordinate of this Position.
     pub fn get_x(self) -> i32 {
-        return self.x;
+        self.x
     }
     /// Returns the y coordinate of this Position.
     pub fn get_y(self) -> i16 {
-        return self.y;
+        self.y
     }
     /// Returns the z coordinate of this Position.
     pub fn get_z(self) -> i32 {
-        return self.z
+        self.z
     }
+    
     /// Creates a Position from a series of bytes. Requires 8 bytes or more in the buffer. Also
     /// returns how many bytes were used in this function, which should always be 8.
     pub fn from_bytes(data: &[u8]) -> Result<(Position, usize), Error> {
@@ -869,7 +805,8 @@ impl Position {
         if z >= 2^25 {
             z -= 2^26
         }
-        return Ok((Position { x, y, z }, 8));
+
+        Ok((Position { x, y, z }, 8))
     }
     /// Creates a Position from a Read type.
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Position, Error> {
@@ -894,7 +831,8 @@ impl Position {
         if z >= 2^25 {
             z -= 2^26
         }
-        return Ok(Position { x, y, z });
+
+        Ok(Position { x, y, z })
     }
     /// Creates a Position from coordinate values.
     pub fn from_values(x: i32, y: i16, z: i32) -> Position {
@@ -904,30 +842,29 @@ impl Position {
     }
     /// Converts a Position into a series of bytes.
     pub fn to_bytes(self) -> Result<Vec<u8>, Error> {
-        let xval;
-        let yval;
-        let zval;
-        if self.x < 0 {
-            xval = (self.x + (2^26)) as u64;
+        let xval = if self.x < 0 {
+            (self.x + (2^26)) as u64
         }
         else {
-            xval = self.x as u64;
-        }
-        if self.z < 0 {
-            zval = (self.x + (2^26)) as u64;
-        }
-        else {
-            zval = self.z as u64;
-        }
-        if self.y < 0 {
-            yval = (self.y + (2^12)) as u64;
+            self.x as u64
+        };
+        let zval = if self.z < 0 {
+            (self.x + (2^26)) as u64
         }
         else {
-            yval = self.y as u64;
+            self.z as u64
+        };
+        let yval = if self.y < 0 {
+            (self.y + (2^12)) as u64
         }
+        else {
+            self.y as u64
+        };
+
         let u64val: u64 = ((xval & 0x3FFFFFF) << 38) | ((zval & 0x3FFFFFF) << 12) | (yval & 0xFFF);
         let u64bytes = u64val.to_be_bytes();
-        return Ok(u64bytes.to_vec());
+
+        Ok(u64bytes.to_vec())
     }
     /// Writes a Position to a Write type.
     pub fn to_writer<W: std::io::Write>(self, writer: &mut W) -> Result<(), Error> {
@@ -935,10 +872,10 @@ impl Position {
         let u64bytes = u64val.to_be_bytes();
         match writer.write_all(&u64bytes) {
             Ok(_) => {
-                return Ok(());
+                Ok(())
             }
             Err(e) => {
-                return Err(Error::WriterError(e));
+                Err(Error::WriterError(e))
             }
         }
     }
@@ -966,7 +903,8 @@ pub mod generalized {
         // This is required because Mojang uses Java's modified UTF-8 which isn't
         // good or compatible with standard UTF-8.
         let string = cesu8::from_java_cesu8(&text)?;
-        return Ok(string.to_string());
+
+        Ok(string.to_string())
     }
     /// Reads a `String` from a type implimenting `Read`. This function returns the string without the
     /// VarInt length prefix. The text is not converted from Java's "Modified UTF-8."
@@ -979,8 +917,9 @@ pub mod generalized {
                 return Err(Error::ReaderError(e));
             }
         }
+
         // TODO: proper error!
-        return Ok(std::str::from_utf8(&text).expect("Invalid UTF-8!").to_string());
+        Ok(std::str::from_utf8(&text).expect("Invalid UTF-8!").to_string())
     }
     /// Reads a `String` from a series of bytes. This function returns the string without the VarInt
     /// length prefix, but does include the size of that VarInt in the final size calculation. The text
@@ -992,10 +931,11 @@ pub mod generalized {
         for i in 0..text.len() {
             text[i] = finbytes[i];
         }
+
         // This is required because Mojang uses Java's modified UTF-8 which isn't
         // good or compatible with standard UTF-8.
         let string = cesu8::from_java_cesu8(&text)?;
-        return Ok((string.to_string(), string_len.0.value() as usize + string_len.1));
+        Ok((string.to_string(), string_len.0.value() as usize + string_len.1))
     }
     /// Reads a `String` from a series of bytes. This function returns the string without the VarInt
     /// length prefix, but does include the size of that VarInt in the final size calculation. The text
@@ -1007,11 +947,12 @@ pub mod generalized {
         for i in 0..text.len() {
             text[i] = finbytes[i];
         }
+        
         // TODO: proper error!
-        return Ok((
+        Ok((
             std::str::from_utf8(&text).expect("Invalid UTF-8!").to_string(),
             string_len.0.value() as usize + string_len.1
-        ));
+        ))
     }
     /// Writes a `String` to a Write interface. Converts into Java's modified
     /// UTF-8 format.
@@ -1030,7 +971,8 @@ pub mod generalized {
                 return Err(Error::WriterError(e));
             }
         }
-        return Ok(());
+
+        Ok(())
     }
     /// Writes a `String` to a Write interface. Does not convert into Java's
     /// modified UTF-8 format.
@@ -1049,7 +991,8 @@ pub mod generalized {
                 return Err(Error::WriterError(e));
             }
         }
-        return Ok(());
+
+        Ok(())
     }
     /// Converts a `String` to a VarInt length prefixed series of bytes. Converts
     /// from Java's modified UTF-8 to standard UTF-8.
@@ -1058,7 +1001,8 @@ pub mod generalized {
         let len = VarInt::from_value(as_bytes.len() as i32)?;
         let mut len_as_bytes = len.to_bytes()?;
         len_as_bytes.append(&mut as_bytes.to_vec());
-        return Ok(len_as_bytes);
+
+        Ok(len_as_bytes)
     }
     /// Converts a `String` to a VarInt length prefixed series of bytes. Does not
     /// preform modified UTF-8 conversion, unlike [string_to_bytes].
@@ -1067,30 +1011,29 @@ pub mod generalized {
         let len = VarInt::from_value(as_bytes.len() as i32)?;
         let mut len_as_bytes = len.to_bytes()?;
         len_as_bytes.append(&mut as_bytes.to_vec());
-        return Ok(len_as_bytes);
+
+        Ok(len_as_bytes)
     }
     pub fn boolean_from_reader<R: std::io::Read>(reader: &mut R) -> Result<bool, Error> {
         let byte = read_byte(reader)?;
-        if byte == 0x00 {
-            return Ok(false);
+
+        match byte {
+            0x00 => Ok(false),
+            0x01 => Ok(true),
+            _ => Err(Error::InvalidBool)
         }
-        if byte == 0x01 {
-            return Ok(true);
-        }
-        return Err(Error::InvalidBool);
     }
     /// This function will always read just a single byte.
     pub fn boolean_from_bytes(bytes: &[u8]) -> Result<(bool, usize), Error> {
-        if bytes.len() < 1 {
+        if bytes.is_empty() {
             return Err(Error::MissingData);
         }
-        if bytes[0] == 0x00 {
-            return Ok((false, 1));
+
+        match bytes[0] {
+            0x00 => Ok((false, 1)),
+            0x01 => Ok((true, 1)),
+            _ => Err(Error::InvalidBool)
         }
-        if bytes[0] == 0x01 {
-            return Ok((true, 1));
-        }
-        return Err(Error::InvalidBool);
     }
     /// Either writes 0x00 or 0x01 to the writer. Come on, you don't need this.
     pub fn boolean_to_writer<W: std::io::Write>(writer: &mut W, data: bool) -> Result<(), Error> {
@@ -1110,56 +1053,56 @@ pub mod generalized {
                 }
             }
         }
-        return Ok(());
+
+        Ok(())
     }
     /// This isn't something you should need or use. It's one byte. It's not
     /// even possible to get an error here.
     pub fn boolean_to_bytes(data: bool) -> Result<Vec<u8>, Error> {
-        if data {
-            return Ok(vec![0x01]);
-        }
-        else {
-            return Ok(vec![0x00]);
-        }
+        Ok(vec![if data { 0x01 } else { 0x00 }])
     }
     /// Uses a Read type to read a Java Byte from the stream.
     pub fn byte_from_reader<R: std::io::Read>(reader: &mut R) -> Result<i8, Error> {
         let byte = read_byte(reader)?;
-        return Ok(i8::from_be_bytes([byte]));
+
+        Ok(i8::from_be_bytes([byte]))
     }
     /// Reads a Java Byte from a list of bytes. Returns the value and number of bytes read.
     pub fn byte_from_bytes(bytes: &[u8]) -> Result<(i8, usize), Error> {
-        if bytes.len() < 1 {
+        if bytes.is_empty() {
             return Err(Error::MissingData);
         }
-        return Ok((i8::from_be_bytes([bytes[0]]), 1));
+
+        Ok((i8::from_be_bytes([bytes[0]]), 1))
     }
     /// Writes a Java Byte to a Write type.
     pub fn byte_to_writer<W: std::io::Write>(writer: &mut W, byte: i8) -> Result<(), Error> {
         match writer.write_all(&byte.to_be_bytes()) {
             Ok(_) => {
-                return Ok(());
+                Ok(())
             }
             Err(e) => {
-                return Err(Error::WriterError(e));
+                Err(Error::WriterError(e))
             }
         }
     }
     /// Returns a Java Byte as an array of bytes.
     pub fn byte_to_bytes(byte: i8) -> Result<Vec<u8>, Error> {
-        return Ok(byte.to_be_bytes().to_vec());
+        Ok(byte.to_be_bytes().to_vec())
     }
     /// Uses a Read type to read an unsigned Java Byte from the stream.
     pub fn unsigned_byte_from_reader<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
         let byte = read_byte(reader)?;
-        return Ok(u8::from_be_bytes([byte]));
+
+        Ok(u8::from_be_bytes([byte]))
     }
     /// Reads an unsigned Java Byte from a list of bytes. Returns the value and number of bytes read.
     pub fn unsigned_byte_from_bytes(bytes: &[u8]) -> Result<(u8, usize), Error> {
-        if bytes.len() < 1 {
+        if bytes.is_empty() {
             return Err(Error::MissingData);
         }
-        return Ok((u8::from_be_bytes([bytes[0]]), 1));
+        
+        Ok((u8::from_be_bytes([bytes[0]]), 1))
     }
     /// Writes an unsigned Java Byte to a Write type.
     pub fn unsigned_byte_to_writer<W: std::io::Write>(writer: &mut W, byte: u8) -> Result<(), Error> {
@@ -1353,9 +1296,9 @@ fn read_byte<R: std::io::Read>(reader: &mut R) -> Result<u8, Error> {
 }
 
 fn read_bytes<R: std::io::Read, const N: usize>(reader: &mut R) -> Result<[u8; N], Error> {
-    let mut buf = [0; N];
-    for i in 0..N {
-        buf[i] = read_byte(reader)?
+    let mut buf: [u8; N] = [0; N];
+    for i in buf.iter_mut() {
+        *i = read_byte(reader)?;
     }
     return Ok(buf);
 }

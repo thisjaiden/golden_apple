@@ -1,24 +1,34 @@
 /// Enums and packets for communicating with traditional Minecraft software
-/// during the inital "handshake" stage of a connection. Note that there are no
-/// clientbound packets during this phase, and that the only serverbound packet
-/// immediately changes both the client and server's stage to a different one.
+/// during the inital "handshake" stage of a connection.
+/// 
+/// Note that there are no clientbound packets during this phase, and that the
+/// only serverbound packet immediately changes both the client and server's
+/// stage to a different one.
 pub mod handshake;
 
-/// Packets for communicating with traditional Minecraft software during the
-/// "status" stage of a connection. Note that this is a connection dead-end, and
-/// some conditions apply to the order in which packets should be sent and
-/// recieved. For more information, see [wiki.vg](https://wiki.vg/Protocol#Status).
+/// Packets and structs for communicating with traditional Minecraft software
+/// during the "status" stage of a connection.
+/// 
+/// Note that this is a connection dead-end, and some conditions apply to the
+/// order in which packets should be sent and recieved. For more information,
+/// see [wiki.vg](https://wiki.vg/Protocol#Status).
 pub mod status;
 
-/// Structs and Packets for communicating with traditional Minecraft software
-/// during the "login" stage of a connection. This is the stage at which
-/// compression and encryption may be enabled, so all conversion tools will have
-/// the following variants:
+/// Structs and packets for communicating with traditional Minecraft software
+/// during the "login" stage of a connection.
+/// 
+/// This is the stage at which compression and encryption may be enabled, so all
+/// conversion tools will have the following variants:
 /// - `_com` Compressed
 /// - `_enc` Encrypted
 /// - `_enc_com` Encrypted & Compressed  
+/// 
 /// The variants including encryption require the `encryption` cargo feature.
 pub mod login;
+
+/// Structs, packets, and enums for communicating with traditional Minecraft
+/// sofrtware during the "configuration" stage of a connection.
+pub mod configuration;
 
 
 /// Represents all the packets that may be sent to the server at various stages
@@ -46,17 +56,17 @@ impl ClientboundPacket {
     ) -> Result<Self, crate::Error> {
         match protocol_state {
             ProtocolState::Handshake => {
-                return Err(crate::Error::NoClientboundHandshake);
+                Err(crate::Error::NoClientboundHandshake)
             },
             ProtocolState::Status => {
-                return Ok(ClientboundPacket::Status(
+                Ok(ClientboundPacket::Status(
                     status::ClientboundPacket::from_reader(reader)?
-                ));
+                ))
             },
             ProtocolState::Login => {
-                return Ok(ClientboundPacket::Login(
+                Ok(ClientboundPacket::Login(
                     login::ClientboundPacket::from_reader(reader)?
-                ));
+                ))
             }
             _ => todo!()
         }
@@ -69,9 +79,9 @@ impl ClientboundPacket {
                 panic!("It's not possible for packets to be compressed during these stages of networking!");
             },
             ProtocolState::Login => {
-                return Ok(ClientboundPacket::Login(
+                Ok(ClientboundPacket::Login(
                     login::ClientboundPacket::from_reader_com(reader)?
-                ));
+                ))
             }
             _ => todo!()
         }
@@ -97,6 +107,7 @@ pub enum ProtocolState {
 impl TryFrom<u8> for ProtocolState {
     type Error = crate::Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_u8(value).ok_or(Self::Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_u8(value)
+            .ok_or(Self::Error::EnumOutOfBound)
     }
 }

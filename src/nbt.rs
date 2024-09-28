@@ -72,13 +72,12 @@ fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
 
 pub fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
     let tag_type = read_byte(reader)?;
-    let tag_name;
-    if !(tag_type == 0x00) {
-        tag_name = read_string_tag(reader)?;
-    }
-    else {
-        tag_name = String::from("N/A");
-    }
+    let tag_name = if tag_type == 0x00 {
+        String::from("N/A")
+    } else {
+        read_string_tag(reader)?
+    };
+    
     let tag_val = read_tag_by_type(reader, tag_type)?;
     return Ok(NamedTag { name: tag_name, tag: tag_val });
 }

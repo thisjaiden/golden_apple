@@ -1,6 +1,8 @@
 use crate::{generalized::unsigned_short_to_bytes, Error, VarInt};
 use std::io::Read;
-use crate::generalized::{string_from_reader, unsigned_short_from_reader, string_to_bytes_no_cesu8};
+use crate::generalized::{
+    string_from_reader, unsigned_short_from_reader, string_to_bytes_no_cesu8
+};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 /// A packet sent from the client to the server during the "handshake" phase.
@@ -40,7 +42,8 @@ impl ServerboundPacket {
         let packet_length = bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
         result.append(&mut bytes);
-        return Ok(result);
+
+        Ok(result)
     }
     /// Deserializes a packet from a [Read] type
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
@@ -52,12 +55,13 @@ impl ServerboundPacket {
                 let server_address = string_from_reader(reader)?;
                 let server_port = unsigned_short_from_reader(reader)?;
                 let next_state = NextState::try_from(VarInt::from_reader(reader)?)?;
-                return Ok(ServerboundPacket::Handshake {
+
+                Ok(ServerboundPacket::Handshake {
                     protocol_version, server_address, server_port, next_state
-                });
+                })
             }
             _ => {
-                return Err(Error::InvalidPacketId(packet_id));
+                Err(Error::InvalidPacketId(packet_id))
             }
         }
     }
@@ -77,14 +81,14 @@ pub enum NextState {
 impl TryFrom<VarInt> for NextState {
     type Error = Error;
     fn try_from(value: VarInt) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_i32(value.value())
-            .ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_i32(value.value())
+            .ok_or(Error::EnumOutOfBound)
     }
 }
 
 impl TryFrom<NextState> for VarInt {
     type Error = Error;
     fn try_from(value: NextState) -> Result<crate::VarInt, Self::Error> {
-        return VarInt::from_value(value as i32);
+        VarInt::from_value(value as i32)
     }
 }

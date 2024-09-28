@@ -1,5 +1,7 @@
 use crate::{Error, Identifier, VarInt, UUID};
-use crate::generalized::{boolean_from_reader, string_from_reader_no_cesu8, string_to_bytes_no_cesu8};
+use crate::generalized::{
+    boolean_from_reader, string_from_reader_no_cesu8, string_to_bytes_no_cesu8
+};
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -74,7 +76,8 @@ impl ServerboundPacket {
         let packet_length = packet_bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
         result.append(&mut packet_bytes);
-        return Ok(result);
+
+        Ok(result)
     }
     /// Converts the packet to bytes in the proper format for networking with
     /// traditional Minecraft software *minus* the packet length being prepended.
@@ -150,7 +153,8 @@ impl ServerboundPacket {
                 }
             }
         }
-        return Ok(bytes);
+
+        Ok(bytes)
     }
     /// Converts this packet into bytes that can be sent over the network to a
     /// server using this protocol version, once compression has been enabled.
@@ -184,7 +188,7 @@ impl ServerboundPacket {
             // TODO: allow the user to select the compression type.
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
             // TODO: be more specific with the errors coming off of these `?`s.
-            encoder.write(&packet_bytes)?;
+            encoder.write_all(&packet_bytes)?;
             let mut compressed_data = encoder.finish()?;
 
             // Put the length of the compressed section of the packet into this VarInt
@@ -202,7 +206,8 @@ impl ServerboundPacket {
             result.append(&mut compressed_data_length.to_bytes()?);
             // Add the rest of the packet
             result.append(&mut compressed_data);
-            return Ok(result);
+
+            Ok(result)
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -218,7 +223,7 @@ impl ServerboundPacket {
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
         
-        return Self::from_reader_internal(reader, packet_length);
+        Self::from_reader_internal(reader, packet_length)
     }
     fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
@@ -227,7 +232,7 @@ impl ServerboundPacket {
                 let name = string_from_reader_no_cesu8(reader)?;
                 let uuid = UUID::from_reader(reader)?;
 
-                return Ok(ServerboundPacket::LoginStart { name, uuid })
+                Ok(ServerboundPacket::LoginStart { name, uuid })
             }
             0x01 => {
                 let array_length = VarInt::from_reader(reader)?;
@@ -237,9 +242,9 @@ impl ServerboundPacket {
                 let mut verify_token = vec![0; array_length.value() as usize];
                 reader.read_exact(&mut verify_token).unwrap();
 
-                return Ok(ServerboundPacket::EncryptionResponse {
+                Ok(ServerboundPacket::EncryptionResponse {
                     shared_secret, verify_token
-                });
+                })
             }
             0x02 => {
                 let message_id = VarInt::from_reader(reader)?;
@@ -252,19 +257,20 @@ impl ServerboundPacket {
                         1;
                     let mut data = vec![0; dta_len];
                     reader.read_exact(&mut data).unwrap();
-                    return Ok(ServerboundPacket::LoginPluginResponse {
+
+                    Ok(ServerboundPacket::LoginPluginResponse {
                         message_id,
                         data: Some(data)
-                    });
+                    })
                 }
                 else {
-                    return Ok(ServerboundPacket::LoginPluginResponse {
+                    Ok(ServerboundPacket::LoginPluginResponse {
                         message_id,
                         data: None
-                    });
+                    })
                 }
             }
-            0x03 => return Ok(ServerboundPacket::LoginAcknowledged),
+            0x03 => Ok(ServerboundPacket::LoginAcknowledged),
             0x04 => {
                 let key = Identifier::from_reader(reader)?;
                 let bool_result = boolean_from_reader(reader)?;
@@ -272,22 +278,20 @@ impl ServerboundPacket {
                     let dta_len = VarInt::from_reader(reader)?;
                     let mut data = vec![0; dta_len.value() as usize];
                     reader.read_exact(&mut data).unwrap();
-                    return Ok(ServerboundPacket::CookieResponse {
+
+                    Ok(ServerboundPacket::CookieResponse {
                         key,
                         payload: Some(data)
-                    });
-                    
+                    })
                 }
                 else {
-                    return Ok(ServerboundPacket::CookieResponse {
+                    Ok(ServerboundPacket::CookieResponse {
                         key,
                         payload: None
-                    });
+                    })
                 }
             },
-            _ => {
-                return Err(Error::InvalidPacketId(packet_id));
-            }
+            _ => { Err(Error::InvalidPacketId(packet_id)) }
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -433,7 +437,8 @@ impl ClientboundPacket {
                 bytes.append(&mut key.to_bytes()?);
             }
         }
-        return Ok(bytes);
+
+        Ok(bytes)
     }
     /// Converts this packet into bytes that can be sent over the network to a
     /// client using this protocol version.
@@ -443,7 +448,8 @@ impl ClientboundPacket {
         let packet_length = packet_bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
         result.append(&mut packet_bytes);
-        return Ok(result);
+
+        Ok(result)
     }
     /// Converts this packet into bytes that can be sent over the network to a
     /// client using this protocol version, once compression has been enabled.
@@ -467,7 +473,8 @@ impl ClientboundPacket {
             result.push(0x00);
             // Add the rest of the packet
             result.append(&mut packet_bytes);
-            return Ok(result);
+
+            Ok(result)
         }
         else {
             // Otherwise, we need to compress the packet.
@@ -477,7 +484,7 @@ impl ClientboundPacket {
             // TODO: allow the user to select the compression type.
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
             // TODO: be more specific with the errors coming off of these `?`s.
-            encoder.write(&packet_bytes)?;
+            encoder.write_all(&packet_bytes)?;
             let mut compressed_data = encoder.finish()?;
 
             // Put the length of the compressed section of the packet into this VarInt
@@ -495,7 +502,8 @@ impl ClientboundPacket {
             result.append(&mut compressed_data_length.to_bytes()?);
             // Add the rest of the packet
             result.append(&mut compressed_data);
-            return Ok(result);
+
+            Ok(result)
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -511,7 +519,7 @@ impl ClientboundPacket {
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
         
-        return Self::from_reader_internal(reader, packet_length);
+        Self::from_reader_internal(reader, packet_length)
     }
     fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
@@ -519,7 +527,7 @@ impl ClientboundPacket {
             0x00 => {
                 let reason = string_from_reader_no_cesu8(reader)?;
                 
-                return Ok(Self::Disconnect { reason });
+                Ok(Self::Disconnect { reason })
             }
             0x01 => {
                 let server_id = string_from_reader_no_cesu8(reader)?;
@@ -534,9 +542,9 @@ impl ClientboundPacket {
 
                 let should_authenticate = boolean_from_reader(reader)?;
                 
-                return Ok(Self::EncryptionRequest {
+                Ok(Self::EncryptionRequest {
                     server_id, public_key, verify_token, should_authenticate
-                });
+                })
             }
             0x02 => {
                 let uuid = UUID::from_reader(reader)?;
@@ -558,14 +566,14 @@ impl ClientboundPacket {
 
                 let strict_error_handling = boolean_from_reader(reader)?;
 
-                return Ok(Self::LoginSuccess {
+                Ok(Self::LoginSuccess {
                     uuid, username, properties, strict_error_handling
-                });
+                })
             }
             0x03 => {
                 let threshold = VarInt::from_reader(reader)?;
 
-                return Ok(Self::SetCompression { threshold });
+                Ok(Self::SetCompression { threshold })
             }
             0x04 => {
                 let message_id = VarInt::from_reader(reader)?;
@@ -582,16 +590,14 @@ impl ClientboundPacket {
 
                 reader.read_exact(&mut data)?;
 
-                return Ok(Self::LoginPluginRequest { message_id, channel, data });
+                Ok(Self::LoginPluginRequest { message_id, channel, data })
             }
             0x05 => {
                 let key = Identifier::from_reader(reader)?;
 
-                return Ok(Self::CookieRequest { key });
+                Ok(Self::CookieRequest { key })
             },
-            _ => {
-                return Err(Error::InvalidPacketId(packet_id));
-            }
+            _ => { Err(Error::InvalidPacketId(packet_id)) }
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -610,8 +616,15 @@ impl ClientboundPacket {
         let remaining_len = VarInt::from_reader(reader)?;
         let compressed_len = VarInt::from_reader(reader)?;
         if compressed_len.value() == 0 {
-            // Packet is not compressed.
-            return Self::from_reader_internal(reader, VarInt::from_value(remaining_len.value() - compressed_len.read_size().unwrap() as i32)?);
+            // Packet is not compressed. Return whatever standard packet parsing
+            // can gather.
+            Self::from_reader_internal(
+                reader,
+                VarInt::from_value(
+                    remaining_len.value() -
+                    compressed_len.read_size().unwrap() as i32
+                )?
+            )
         }
         else {
             // Packet is compressed. Grab all data...
@@ -620,14 +633,15 @@ impl ClientboundPacket {
             // Add a decoding wrapper...
             let mut decoded =
                 flate2::bufread::ZlibDecoder::new(packet_data.as_ref());
-            // And interpret the packet.
-            return Self::from_reader_internal(
+
+            // And interpret the packet. Also return it.
+            Self::from_reader_internal(
                 &mut decoded,
                 VarInt::from_value(
                     remaining_len.value() -
                     compressed_len.read_size().unwrap() as i32
                 )?
-            );
+            )
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!

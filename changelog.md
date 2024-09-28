@@ -8,6 +8,10 @@
 - `enums::ProtocolState` is now `netty::ProtocolState`
 - `netty::ProtocolState` has been updated to support the "configuration" protocol state.
 - `enums::NextState` is now `netty::handshake::NextState`.
+- `StatusResponse` is now `netty::status::StatusResponse`.
+- `netty::status::StatusResponse` now has a `.to_bytes()` method.
+- `netty::status::StatusResponse` now correctly does *not* convert into and from Java's "Modified UTF-8."
+- `enums::ChatSettings` is now `netty::configuration::ChatSettings`.
 
 ### NBT
 
@@ -26,6 +30,7 @@
 ### General
 
 - Made some of the doc comments nicer :)
+- Brought some of the style and layout up to my new higher standards!
 - `UUID` is now a Copy type.
 - `Identifier`'s `.to_string()` and `.to_bytes()` now both take a refrence to self instead of taking self directly.
 - `Identifier::to_bytes` no longer converts to Java's "Modified UTF-8."
@@ -45,6 +50,7 @@
   - `serde_json` 1.0.124 -> 1.0.128
   - `reqwest` 0.12.5 -> 0.12.7
 - Includes a new library `flate2` for gzip compression done in later stages of networking.
+- Includes a new library `bitflags` for... bitflags.
 
 ## 0.19.0
 

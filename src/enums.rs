@@ -51,7 +51,8 @@ pub enum StatisticCateogry {
 impl TryFrom<crate::VarInt> for StatisticCateogry {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_i32(value.value())
+            .ok_or(Error::EnumOutOfBound)
     }
 }
 
@@ -89,7 +90,8 @@ pub enum Animation {
 impl TryFrom<u8> for Animation {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_u8(value)
+            .ok_or(Error::EnumOutOfBound)
     }
 }
 
@@ -115,7 +117,8 @@ pub enum PaintingDirection {
 impl TryFrom<u8> for PaintingDirection {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_u8(value)
+            .ok_or(Error::EnumOutOfBound)
     }
 }
 
@@ -144,7 +147,8 @@ pub enum MinecartFunctionality {
 impl TryFrom<crate::VarInt> for MinecartFunctionality {
     type Error = Error;
     fn try_from(value: crate::VarInt) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_i32(value.value()).ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_i32(value.value())
+            .ok_or(Error::EnumOutOfBound)
     }
 }
 
@@ -156,27 +160,6 @@ pub enum Orientation {
     South = 3,
     West = 4,
     East = 5
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
-#[repr(u8)]
-/// Represents the level of chat messages a given client would like to receive.
-pub enum ChatSettings {
-    /// "The client is willing to accept all chat messages."
-    Full = 0,
-    /// "The client is willing to accept messages from commands, but does not want general chat
-    /// from other players."
-    System = 1,
-    /// "The client does not want any chat at all. (However, it is still fine with above-hotbar
-    /// game notices)"
-    None = 2
-}
-
-impl TryFrom<u8> for ChatSettings {
-    type Error = Error;
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
@@ -196,6 +179,7 @@ pub enum MessageType {
 impl TryFrom<u8> for MessageType {
     type Error = Error;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        return num_traits::FromPrimitive::from_u8(value).ok_or(Error::EnumOutOfBound);
+        num_traits::FromPrimitive::from_u8(value)
+            .ok_or(Error::EnumOutOfBound)
     }
 }
