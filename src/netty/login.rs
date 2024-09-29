@@ -178,7 +178,8 @@ impl ServerboundPacket {
             result.push(0x00);
             // Add the rest of the packet
             result.append(&mut packet_bytes);
-            return Ok(result);
+            
+            Ok(result)
         }
         else {
             // Otherwise, we need to compress the packet.
@@ -311,7 +312,13 @@ impl ServerboundPacket {
         let compressed_len = VarInt::from_reader(reader)?;
         if compressed_len.value() == 0 {
             // Packet is not compressed.
-            return Self::from_reader_internal(reader, VarInt::from_value(remaining_len.value() - compressed_len.read_size().unwrap() as i32)?);
+            Self::from_reader_internal(
+                reader,
+                VarInt::from_value(
+                    remaining_len.value() -
+                    compressed_len.read_size().unwrap() as i32
+                )?
+            )
         }
         else {
             // Packet is compressed. Grab all data...
@@ -320,14 +327,15 @@ impl ServerboundPacket {
             // Add a decoding wrapper...
             let mut decoded =
                 flate2::bufread::ZlibDecoder::new(packet_data.as_ref());
-            // And interpret the packet.
-            return Self::from_reader_internal(
+            
+            // And interpret the packet. Also return.
+            Self::from_reader_internal(
                 &mut decoded,
                 VarInt::from_value(
                     remaining_len.value() -
                     compressed_len.read_size().unwrap() as i32
                 )?
-            );
+            )
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!

@@ -1,5 +1,9 @@
 use crate::{Error, Identifier, VarInt, UUID};
-use crate::generalized::{boolean_from_reader, boolean_to_bytes, string_from_reader_no_cesu8, string_to_bytes_no_cesu8};
+use crate::generalized::{
+    boolean_from_reader, byte_from_reader, byte_to_bytes, int_to_bytes,
+    long_to_bytes, string_from_reader_no_cesu8, string_to_bytes_no_cesu8,
+    unsigned_byte_from_reader
+};
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -7,7 +11,7 @@ use std::io::Read;
 pub enum ServerboundPacket {
     ClientInformation {
         locale: String,
-        view_distance: u8,
+        view_distance: i8,
         chat_mode: ChatSettings,
         chat_colors: bool,
         skin_parts: SkinSettings,
@@ -83,7 +87,8 @@ impl ServerboundPacket {
                 // Payload
                 assert!(locale.chars().count() <= 16);
                 bytes.append(&mut string_to_bytes_no_cesu8(locale.clone())?);
-                bytes.push(*view_distance);
+
+                bytes.append(&mut byte_to_bytes(*view_distance)?);
                 bytes.append(&mut chat_mode.to_varint().to_bytes()?);
                 bytes.push(if *chat_colors { 0x01 } else { 0x00 });
                 bytes.push(skin_parts.bits());
@@ -91,7 +96,73 @@ impl ServerboundPacket {
                 bytes.push(if *text_filtering { 0x01 } else { 0x00 });
                 bytes.push(if *allow_server_listings { 0x01 } else { 0x00 });
             }
-            _ => todo!()
+            Self::CookieResponse { key, payload } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x01)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut key.to_bytes()?);
+
+                if let Some(payload) = payload {
+                    bytes.push(0x01);
+
+                    assert!(payload.len() <= 5120);
+                    bytes.append(&mut VarInt::from_value(payload.len() as i32)?.to_bytes()?);
+                    bytes.append(&mut payload.clone());
+                }
+                else {
+                    bytes.push(0x00);
+                }
+            }
+            Self::PluginMessage { channel, data } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x02)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut channel.to_bytes()?);
+
+                assert!(data.len() <= 32767);
+                bytes.append(&mut data.clone());
+            }
+            Self::AcknowledgeFinishConfiguration => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x03)?.to_bytes()?);
+            }
+            Self::KeepAlive { id } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x04)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut long_to_bytes(*id)?);
+            }
+            Self::Pong { id } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x05)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut int_to_bytes(*id)?);
+            }
+            Self::ResourcePackResponse { uuid, result } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x06)?.to_bytes()?);
+                
+                // Payload
+                bytes.append(&mut uuid.to_bytes()?);
+                bytes.append(&mut result.to_bytes()?);
+            }
+            Self::KnownPacks { packs } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x07)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut VarInt::from_value(packs.len() as i32)?.to_bytes()?);
+
+                for pack in packs {
+                    bytes.append(&mut string_to_bytes_no_cesu8(pack.namespace.clone())?);
+                    bytes.append(&mut string_to_bytes_no_cesu8(pack.id.clone())?);
+                    bytes.append(&mut string_to_bytes_no_cesu8(pack.version.clone())?);
+                }
+            }
         }
 
         Ok(bytes)
@@ -164,15 +235,43 @@ impl ServerboundPacket {
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let packet_length = VarInt::from_reader(reader)?;
         
-        return Self::from_reader_internal(reader, packet_length);
+        Self::from_reader_internal(reader, packet_length)
     }
     fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
-            0x00..0x10 => todo!(),
-            _ => {
-                return Err(Error::InvalidPacketId(packet_id));
+            0x00 => {
+                let locale = string_from_reader_no_cesu8(reader)?;
+                let view_distance = byte_from_reader(reader)?;
+                let chat_mode = ChatSettings::try_from(VarInt::from_reader(reader)?)?;
+                let chat_colors = boolean_from_reader(reader)?;
+                let skin_parts = SkinSettings::from_bits_retain(unsigned_byte_from_reader(reader)?);
+                let main_hand = VarInt::from_reader(reader)?;
+                let text_filtering = boolean_from_reader(reader)?;
+                let allow_server_listings = boolean_from_reader(reader)?;
+
+                Ok(Self::ClientInformation {
+                    locale, view_distance, chat_mode, chat_colors,
+                    skin_parts, main_hand, text_filtering, allow_server_listings
+                })
             }
+            0x01 => {
+                let key = Identifier::from_reader(reader)?;
+                
+                let payload = if boolean_from_reader(reader)? {
+                    let len = VarInt::from_reader(reader)?;
+                    let mut buf = vec![0x00; len.value() as usize];
+                    reader.read_exact(&mut buf)?;
+                    
+                    Some(buf)
+                }
+                else { None };
+
+                Ok(Self::CookieResponse { key, payload })
+            }
+            0x03 => Ok(Self::AcknowledgeFinishConfiguration),
+            0x02 | 0x04..0x07 => todo!(),
+            _ => Err(Error::InvalidPacketId(packet_id))
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -192,7 +291,13 @@ impl ServerboundPacket {
         let compressed_len = VarInt::from_reader(reader)?;
         if compressed_len.value() == 0 {
             // Packet is not compressed.
-            return Self::from_reader_internal(reader, VarInt::from_value(remaining_len.value() - compressed_len.read_size().unwrap() as i32)?);
+            Self::from_reader_internal(
+                reader,
+                VarInt::from_value(
+                    remaining_len.value() -
+                    compressed_len.read_size().unwrap() as i32
+                )?
+            )
         }
         else {
             // Packet is compressed. Grab all data...
@@ -201,14 +306,15 @@ impl ServerboundPacket {
             // Add a decoding wrapper...
             let mut decoded =
                 flate2::bufread::ZlibDecoder::new(packet_data.as_ref());
-            // And interpret the packet.
-            return Self::from_reader_internal(
+            
+            // And interpret the packet. Also return.
+            Self::from_reader_internal(
                 &mut decoded,
                 VarInt::from_value(
                     remaining_len.value() -
                     compressed_len.read_size().unwrap() as i32
                 )?
-            );
+            )
         }
     }
     /// Not done! Please wait for this to be finished or open a PR!
@@ -313,7 +419,7 @@ impl ClientboundPacket {
     fn from_reader_internal<R: Read>(reader: &mut R, packet_length: VarInt) -> Result<Self, Error> {
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
-            0x00..0x07 => todo!(),
+            0x00..0x10 => todo!(),
             _ => { Err(Error::InvalidPacketId(packet_id)) }
         }
     }

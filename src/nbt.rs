@@ -18,7 +18,8 @@ pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> 
             }
         }
     }
-    return Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) });
+
+    Ok(NamedTag { name: root_name, tag: Tag::Compound(elements) })
 }
 
 /// Converts an entire NBT compound into an array of bytes. This must be a full NBT compound.
@@ -55,7 +56,8 @@ pub fn to_bytes(root_tag: NamedTag) -> Result<Vec<u8>, Error> {
     }
     // Add end tag
     final_bytes.push(0x00);
-    return Ok(final_bytes);
+
+    Ok(final_bytes)
 }
 
 fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
@@ -67,7 +69,8 @@ fn read_string_tag<R: std::io::Read>(reader: &mut R) -> Result<String, Error> {
     // This is required because Mojang uses Java's modified UTF-8 which isn't
     // good or compatible with standard UTF-8.
     let string = cesu8::from_java_cesu8(&bytes)?;
-    return Ok(string.to_string());
+
+    Ok(string.to_string())
 }
 
 pub fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Error> {
@@ -79,7 +82,8 @@ pub fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Erro
     };
     
     let tag_val = read_tag_by_type(reader, tag_type)?;
-    return Ok(NamedTag { name: tag_name, tag: tag_val });
+
+    Ok(NamedTag { name: tag_name, tag: tag_val })
 }
 
 /// Reads a Tag from a [std::io::Read] type R, given that the first byte in the
@@ -87,29 +91,31 @@ pub fn read_named_tag<R: std::io::Read>(reader: &mut R) -> Result<NamedTag, Erro
 pub fn read_tag_with_type<R: std::io::Read>(reader: &mut R) -> Result<Tag, Error> {
     let tag_type = read_byte(reader)?;
     let tag_val = read_tag_by_type(reader, tag_type)?;
-    return Ok(tag_val);
+
+    Ok(tag_val)
 }
 
 /// Functionally similar to [read_tag_with_type], but the tag type must be
 /// specified instead of read from the reader.
 pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result<Tag, Error> {
     match type_id {
-        0x00 => return Ok(Tag::End),
-        0x01 => return Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))),
-        0x02 => return Ok(Tag::Short(i16::from_be_bytes(read_bytes(reader)?))),
-        0x03 => return Ok(Tag::Int(i32::from_be_bytes(read_bytes(reader)?))),
-        0x04 => return Ok(Tag::Long(i64::from_be_bytes(read_bytes(reader)?))),
-        0x05 => return Ok(Tag::Float(f32::from_be_bytes(read_bytes(reader)?))),
-        0x06 => return Ok(Tag::Double(f64::from_be_bytes(read_bytes(reader)?))),
+        0x00 => Ok(Tag::End),
+        0x01 => Ok(Tag::Byte(i8::from_be_bytes([read_byte(reader)?]))),
+        0x02 => Ok(Tag::Short(i16::from_be_bytes(read_bytes(reader)?))),
+        0x03 => Ok(Tag::Int(i32::from_be_bytes(read_bytes(reader)?))),
+        0x04 => Ok(Tag::Long(i64::from_be_bytes(read_bytes(reader)?))),
+        0x05 => Ok(Tag::Float(f32::from_be_bytes(read_bytes(reader)?))),
+        0x06 => Ok(Tag::Double(f64::from_be_bytes(read_bytes(reader)?))),
         0x07 => {
             let array_len = i32::from_be_bytes(read_bytes(reader)?);
             let mut array = vec![];
             for _ in 0..array_len {
                 array.push(i8::from_be_bytes([read_byte(reader)?]));
             }
-            return Ok(Tag::ByteArray(array));
+
+            Ok(Tag::ByteArray(array))
         }
-        0x08 => return Ok(Tag::String(read_string_tag(reader)?)),
+        0x08 => Ok(Tag::String(read_string_tag(reader)?)),
         0x09 => {
             let list_type = read_byte(reader)?;
             let list_len = i32::from_be_bytes(read_bytes(reader)?);
@@ -120,7 +126,8 @@ pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result
             for _ in 0..list_len {
                 list_elements.push(read_tag_by_type(reader, list_type)?);
             }
-            return Ok(Tag::List(list_elements))
+
+            Ok(Tag::List(list_elements))
         }
         0x0A => {
             let mut compound_elements = vec![];
@@ -133,7 +140,8 @@ pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result
                     compound_elements.push(tag);
                 }
             }
-            return Ok(Tag::Compound(compound_elements));
+
+            Ok(Tag::Compound(compound_elements))
         }
         0x0B => {
             let array_len = i32::from_be_bytes(read_bytes(reader)?);
@@ -141,7 +149,8 @@ pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result
             for _ in 0..array_len {
                 array.push(i32::from_be_bytes(read_bytes(reader)?));
             }
-            return Ok(Tag::IntArray(array));
+
+            Ok(Tag::IntArray(array))
         }
         0x0C => {
             let array_len = i32::from_be_bytes(read_bytes(reader)?);
@@ -149,11 +158,10 @@ pub fn read_tag_by_type<R: std::io::Read>(reader: &mut R, type_id: u8) -> Result
             for _ in 0..array_len {
                 array.push(i64::from_be_bytes(read_bytes(reader)?));
             }
-            return Ok(Tag::LongArray(array));
+
+            Ok(Tag::LongArray(array))
         }
-        _ => {
-            return Err(Error::InvalidNbtType);
-        }
+        _ => Err(Error::InvalidNbtType)
     }
 }
 
@@ -212,27 +220,15 @@ impl Tag {
     pub fn write_to_bytes(self) -> Result<Vec<u8>, Error> {
         match self {
             // The end tag has no data.
-            Self::End => return Ok(vec![]),
+            Self::End => Ok(vec![]),
             // It would be great to compact these as they use similar footprints, but the
             // different data types prevent doing this practically.
-            Self::Byte(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
-            Self::Short(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
-            Self::Int(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
-            Self::Long(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
-            Self::Float(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
-            Self::Double(data) => {
-                return Ok(data.to_be_bytes().to_vec());
-            },
+            Self::Byte(data) => Ok(data.to_be_bytes().to_vec()),
+            Self::Short(data) => Ok(data.to_be_bytes().to_vec()),
+            Self::Int(data) => Ok(data.to_be_bytes().to_vec()),
+            Self::Long(data) => Ok(data.to_be_bytes().to_vec()),
+            Self::Float(data) => Ok(data.to_be_bytes().to_vec()),
+            Self::Double(data) => Ok(data.to_be_bytes().to_vec()),
             Self::ByteArray(data) => {
                 let len_prefix = data.len() as i32;
                 let mut final_data = vec![];
@@ -242,7 +238,8 @@ impl Tag {
                 for byte in data {
                     final_data.push(byte.to_be_bytes()[0]);
                 }
-                return Ok(final_data);
+
+                Ok(final_data)
             },
             Self::IntArray(data) => {
                 let len_prefix = data.len() as i32;
@@ -255,7 +252,8 @@ impl Tag {
                         final_data.push(*byte);
                     }
                 }
-                return Ok(final_data);
+
+                Ok(final_data)
             },
             Self::LongArray(data) => {
                 let len_prefix = data.len() as i32;
@@ -268,7 +266,8 @@ impl Tag {
                         final_data.push(*byte);
                     }
                 }
-                return Ok(final_data);
+
+                Ok(final_data)
             },
             Self::String(data) => {
                 let mut final_data = vec![];
@@ -281,7 +280,8 @@ impl Tag {
                 for byte in strbytes.iter() {
                     final_data.push(*byte);
                 }
-                return Ok(final_data);
+
+                Ok(final_data)
             },
             Self::List(data) => {
                 let mut final_data = vec![];
@@ -295,7 +295,8 @@ impl Tag {
                     }
                 }
                 final_data.push(0x00);
-                return Ok(final_data);
+
+                Ok(final_data)
             },
             Self::Compound(data) => {
                 let mut final_data = vec![];
@@ -313,7 +314,8 @@ impl Tag {
                     }
                 }
                 final_data.push(0x00);
-                return Ok(final_data);
+
+                Ok(final_data)
             }
         }
     }

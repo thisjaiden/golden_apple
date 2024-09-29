@@ -39,7 +39,7 @@ This crate is unfinished and some features aren't yet present. Here's an overvie
 
 - Metadata
 - Slot
-- Netty (11.9%)
+- Netty (13.1%)
 - Other General Enums (~50%)
 
 ## Cargo Features

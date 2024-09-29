@@ -6,8 +6,9 @@ use crate::generalized::{
 use std::io::Read;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-/// A packet sent from the client to the server during the "status" phase. Note
-/// that the Notchian server has some weirdness around packet order. See
+/// A packet sent from the client to the server during the "status" phase.
+/// 
+/// Note that the Notchian server has some weirdness around packet order. See
 /// [wiki.vg](https://wiki.vg/Protocol#Status) for more info.
 pub enum ServerboundPacket {
     StatusRequest,
@@ -44,7 +45,8 @@ impl StatusResponse {
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<StatusResponse, Error> {
         let raw_data = string_from_reader_no_cesu8(reader)?;
         let json_data: serde_json::Value = serde_json::from_str(&raw_data)?;
-        return Ok(StatusResponse {
+
+        Ok(StatusResponse {
             version_name: json_data["version"]["name"].to_string(),
             version_protocol: json_data["version"]["protocol"].as_i64().ok_or(Error::InvalidJsonRoot)?,
             max_players: json_data["players"]["max"].as_i64().ok_or(Error::InvalidJsonRoot)?,
@@ -66,9 +68,10 @@ impl StatusResponse {
                         for pair in dta {
                             final_data.push((pair["name"].to_string(), UUID::from_username(pair["id"].to_string()).unwrap()));
                         }
-                        return final_data;
+
+                        final_data
                     })?
-        });
+        })
     }
     fn to_string(&self) -> Result<String, Error> {
         let mut string_data = String::new();
@@ -97,7 +100,8 @@ impl StatusResponse {
         string_data += ",\"favicon\":\"data:image/png;base64,";
         string_data += &self.favicon_data;
         string_data += "\"}";
-        return Ok(string_data);
+
+        Ok(string_data)
     }
 
     pub fn to_writer<W: std::io::Write>(&self, writer: &mut W) -> Result<(), Error> {
@@ -129,20 +133,20 @@ impl ServerboundPacket {
         let packet_length = bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
         result.append(&mut bytes);
-        return Ok(result);
+
+        Ok(result)
     }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let _packet_length = VarInt::from_reader(reader)?;
         let packet_id = VarInt::from_reader(reader)?;
         match packet_id.value() {
-            0x00 => return Ok(ServerboundPacket::StatusRequest),
+            0x00 => Ok(ServerboundPacket::StatusRequest),
             0x01 => {
                 let payload = long_from_reader(reader)?;
-                return Ok(ServerboundPacket::PingRequest { payload });
+
+                Ok(ServerboundPacket::PingRequest { payload })
             }
-            _ => {
-                return Err(Error::InvalidPacketId(packet_id));
-            }
+            _ => Err(Error::InvalidPacketId(packet_id))
         }
     }
 }
@@ -168,7 +172,8 @@ impl ClientboundPacket {
         let packet_length = bytes.len();
         let mut result = VarInt::from_value(packet_length as i32)?.to_bytes()?;
         result.append(&mut bytes);
-        return Ok(result);
+
+        Ok(result)
     }
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let _packet_length = VarInt::from_reader(reader)?;
@@ -176,15 +181,15 @@ impl ClientboundPacket {
         match packet_id.value() {
             0x00 => {
                 let response = StatusResponse::from_reader(reader)?;
-                return Ok(ClientboundPacket::StatusResponse { response });
+
+                Ok(ClientboundPacket::StatusResponse { response })
             }
             0x01 => {
                 let payload = long_from_reader(reader)?;
-                return Ok(ClientboundPacket::PingResponse { payload });
+
+                Ok(ClientboundPacket::PingResponse { payload })
             }
-            _ => {
-                return Err(Error::InvalidPacketId(packet_id));
-            }
+            _ => Err(Error::InvalidPacketId(packet_id))
         }
     }
 }
