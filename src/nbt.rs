@@ -321,6 +321,8 @@ impl Tag {
     }
 }
 
+// TODO: an implementation of PartialEq and Eq that respects NBT ordering rules
+// would be great
  #[derive(PartialEq, Clone, Debug)]
 /// Represents a key-value pair in a NBT structure.
 pub struct NamedTag {

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Netty
+
+- `netty::handshake` now fully supports all serverbound packets.
+
 ## 0.20.0
 
 ### Minecraft Compatibility

@@ -1,8 +1,9 @@
+use crate::nbt::NamedTag;
 use crate::{Error, Identifier, VarInt, UUID};
 use crate::generalized::{
-    boolean_from_reader, byte_from_reader, byte_to_bytes, int_to_bytes,
-    long_to_bytes, string_from_reader_no_cesu8, string_to_bytes_no_cesu8,
-    unsigned_byte_from_reader
+    boolean_from_reader, byte_from_reader, byte_to_bytes, int_from_reader,
+    int_to_bytes, long_from_reader, long_to_bytes, string_from_reader_no_cesu8,
+    string_to_bytes_no_cesu8, unsigned_byte_from_reader
 };
 use std::io::Read;
 
@@ -45,10 +46,67 @@ pub enum ServerboundPacket {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 /// A packet sent from the server to the client during the "configuration" phase.
 pub enum ClientboundPacket {
-    
+    CookieRequest {
+        key: Identifier
+    },
+    PluginMessage {
+        channel: Identifier,
+        data: Vec<u8>,
+    },
+    Disconnect {
+        reason: String // TODO: https://wiki.vg/Protocol#Type:JSON_Text_Component
+    },
+    FinishConfiguration,
+    KeepAlive {
+        id: i64
+    },
+    Ping {
+        id: i32
+    },
+    ResetChat,
+    RegistryData {
+        id: String,
+        // TODO: NOTE:
+        // https://wiki.vg/NBT#Network_NBT_.28Java_Edition.29
+        entries: Vec<(Identifier, Option<NamedTag>)>
+    },
+    RemoveResourcePack {
+        uuid: Option<UUID>
+    },
+    AddResourcePack {
+        uuid: UUID,
+        url: String,
+        hash: String,
+        forced: bool,
+        // TODO: https://wiki.vg/Protocol#Type:Text_Component
+        prompt_message: Option<NamedTag>
+    },
+    StoreCookie {
+        key: Identifier,
+        payload: Vec<u8>
+    },
+    Transfer {
+        host: String,
+        port: VarInt
+    },
+    FeatureFlags {
+        flags: Vec<Identifier>
+    },
+    UpdateTags {
+        // TODO
+    },
+    KnownPacks {
+        packs: Vec<KnownPack>
+    },
+    CustomReportDetails {
+        // TODO
+    },
+    ServerLinks {
+        // TODO
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -269,8 +327,53 @@ impl ServerboundPacket {
 
                 Ok(Self::CookieResponse { key, payload })
             }
+            0x02 => {
+                let key = Identifier::from_reader(reader)?;
+                // It's okay to determine length lazily here unless a custom
+                // server/client sends something under the `minecraft`` namespace
+                // which is both improper and disallowed. In the future this
+                // should just do things the right way, so this is a TODO.
+                let key_len = key.to_bytes()?.len();
+                let data_len =
+                    packet_length.value() as usize -
+                    packet_id.read_size().unwrap() as usize -
+                    key_len;
+                
+                let mut data = vec![0; data_len];
+                reader.read_exact(&mut data).unwrap();
+
+                Ok(Self::PluginMessage { channel: key, data })
+            }
             0x03 => Ok(Self::AcknowledgeFinishConfiguration),
-            0x02 | 0x04..0x07 => todo!(),
+            0x04 => {
+                let id = long_from_reader(reader)?;
+
+                Ok(ServerboundPacket::KeepAlive { id })
+            }
+            0x05 => {
+                // Redundant or genius? That's Mojang's motto!
+                let id = int_from_reader(reader)?;
+
+                Ok(ServerboundPacket::Pong { id })
+            }
+            0x06 => {
+                let uuid = UUID::from_reader(reader)?;
+                let result = VarInt::from_reader(reader)?;
+
+                Ok(ServerboundPacket::ResourcePackResponse { uuid, result })
+            }
+            0x07 => {
+                let count = VarInt::from_reader(reader)?;
+                let mut packs = Vec::with_capacity(count.value() as usize);
+                for _ in 0..count.value() {
+                    let namespace = string_from_reader_no_cesu8(reader)?;
+                    let id = string_from_reader_no_cesu8(reader)?;
+                    let version = string_from_reader_no_cesu8(reader)?;
+                    packs.push(KnownPack { namespace, id, version });
+                }
+
+                Ok(ServerboundPacket::KnownPacks { packs })
+            },
             _ => Err(Error::InvalidPacketId(packet_id))
         }
     }
@@ -330,6 +433,13 @@ impl ClientboundPacket {
     fn to_most_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
         match self {
+            Self::CookieRequest { key } => {
+                // Packet ID
+                bytes.append(&mut VarInt::from_value(0x00)?.to_bytes()?);
+
+                // Payload
+                bytes.append(&mut key.to_bytes()?);
+            }
             _ => todo!()
         }
 
@@ -503,10 +613,10 @@ impl TryFrom<VarInt> for ChatSettings {
     }
 }
 
-impl Into<VarInt> for ChatSettings {
-    fn into(self) -> VarInt {
+impl From<ChatSettings> for VarInt {
+    fn from(val: ChatSettings) -> VarInt {
         // This is a safe unwrap: no enum value exceeds safe VarInt limits.
-        VarInt::from_value(self as i32).unwrap()
+        VarInt::from_value(val as i32).unwrap()
     }
 }
 
