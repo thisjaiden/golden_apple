@@ -6,7 +6,7 @@ extern crate num_derive;
 /// The Minecraft protocol version used for communicating over the network with
 /// the `netty` module. see [wiki.vg](https://wiki.vg/Protocol_version_numbers)
 /// for more information.
-pub const PROTOCOL_VERSION: i32 = 767;
+pub const PROTOCOL_VERSION: i32 = 768;
 
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.

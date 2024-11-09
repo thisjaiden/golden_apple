@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.20.0
+
+### Minecraft Compatibility
+
+- Updated to Minecraft 1.21.2/1.21.3 (protocol 768)
 
 ### Netty
 
@@ -46,9 +50,9 @@
 ### Ecosystem
 
 - Updated dependencies to the latest versions:
-  - `serde` 1.0.207 -> 1.0.210
-  - `serde_json` 1.0.124 -> 1.0.128
-  - `reqwest` 0.12.5 -> 0.12.7
+  - `serde` 1.0.207 -> 1.0.214
+  - `serde_json` 1.0.124 -> 1.0.132
+  - `reqwest` 0.12.5 -> 0.12.9
 - Includes a new library `flate2` for gzip compression done in later stages of networking.
 - Includes a new library `bitflags` for... bitflags.
 

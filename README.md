@@ -52,5 +52,6 @@ There is one Cargo feature flag for this crate, `encryption`. It is not complete
 
 |  Crate version  | Minecraft version | Minecraft Protocol ID |
 | --------------- | ----------------- | --------------------- |
+| 0.20.0          | 1.21.2 - 1.21.3   | 768                   |
 | 0.18.0 - 0.19.0 | 1.21.0 - 1.21.1   | 767                   |
 | 0.17.0 - 0.17.2 | 1.19.2            | 762                   |

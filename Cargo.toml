@@ -1,6 +1,6 @@
 [package]
 name = "golden_apple"
-version = "0.19.0"
+version = "0.20.0"
 authors = ["thisjaiden"]
 edition = "2021"
 keywords = ["api", "parse", "minecraft"]
@@ -15,9 +15,9 @@ license = "MIT"
 encryption = []
 
 [dependencies]
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
-reqwest = { version = "0.12.7", features = ["blocking"] }
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
+reqwest = { version = "0.12.9", features = ["blocking"] }
 num-traits = "0.2.19"
 num-derive = "0.4.2"
 cesu8 = "1.1.0"
@@ -25,5 +25,5 @@ flate2 = "1.0.34"
 bitflags = "2.6.0"
 
 [build-dependencies]
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
