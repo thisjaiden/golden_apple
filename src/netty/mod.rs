@@ -30,6 +30,7 @@ pub mod login;
 /// sofrtware during the "configuration" stage of a connection.
 pub mod configuration;
 
+mod play;
 
 /// Represents all the packets that may be sent to the server at various stages
 /// of a client-server interaction.
@@ -48,6 +49,7 @@ pub enum ServerboundPacket {
 pub enum ClientboundPacket {
     Status(status::ClientboundPacket),
     Login(login::ClientboundPacket),
+    Play(play::ClientboundPacket),
 }
 
 impl ClientboundPacket {

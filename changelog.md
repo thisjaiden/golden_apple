@@ -2,9 +2,32 @@
 
 ## Unreleased
 
+### Minecraft Compatibility
+
+- Updated to Minecraft 1.21.10 (protocol 773)
+
 ### Netty
 
 - `netty::handshake` now fully supports all serverbound packets.
+- `netty::status::StatusResponse` has been slightly updated to better reflect actual behavior.
+
+### General
+
+- Improved some doc comments.
+- `ChatComponent` is now `TextComponent`, which has been highly revised.
+- `ChatScore` no longer has the `value` field.
+- `UUID::from_username` now takes a `'str` instead of a `String`.
+- `HoverEvent` has been revised to meet new protocol specifications.
+- New tests have been added to test basic network functionality.
+
+### Ecosystem
+
+- Updated dependencies to the latest versions:
+  - `serde` 1.0.214 -> 1.0.228
+  - `serde_json` 1.0.132 -> 1.0.145
+  - `reqwest` 0.12.9 -> 0.12.25
+  - `flate2` 1.0.34 -> 1.1.5
+  - `bitflags` 2.6.0 -> 2.10.0
 
 ## 0.20.0
 

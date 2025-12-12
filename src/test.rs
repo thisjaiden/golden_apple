@@ -89,11 +89,11 @@ fn position_standard_values() -> Result<(), super::Error> {
 fn username_api() -> Result<(), super::Error> {
     use super::UUID;
     // Create a UUID from a username
-    let uuid = UUID::from_username(String::from("thisjaiden"))?;
+    let uuid = UUID::from_username("thisjaiden")?;
     // Test username -> UUID
     assert_eq!(uuid.clone().to_value()?, 0x09773765901b4da1a1243467f482b8b3);
     // Test UUID -> username
-    assert_eq!(uuid.to_username()?, String::from("thisjaiden"));
+    assert_eq!(uuid.to_username()?, "thisjaiden");
     return Ok(());
 }
 

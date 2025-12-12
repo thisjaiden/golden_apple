@@ -33,11 +33,11 @@ pub enum ClientboundPacket {
 pub struct StatusResponse {
     pub version_name: String,
     pub version_protocol: i64,
-    pub max_players: i64,
-    pub online_players: i64,
-    pub favicon_data: String,
-    pub sample_players: Vec<(String, UUID)>,
-    pub description: Chat
+    pub max_players: Option<i64>,
+    pub online_players: Option<i64>,
+    pub favicon_data: Option<String>,
+    pub sample_players: Option<Vec<(String, UUID)>>,
+    pub description: Option<Chat>
 }
 
 impl StatusResponse {
@@ -45,32 +45,54 @@ impl StatusResponse {
     pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<StatusResponse, Error> {
         let raw_data = string_from_reader_no_cesu8(reader)?;
         let json_data: serde_json::Value = serde_json::from_str(&raw_data)?;
-
-        Ok(StatusResponse {
-            version_name: json_data["version"]["name"].to_string(),
-            version_protocol: json_data["version"]["protocol"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            max_players: json_data["players"]["max"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            online_players: json_data["players"]["online"].as_i64().ok_or(Error::InvalidJsonRoot)?,
-            description: Chat::from_string(serde_json::to_string(&json_data["description"])?)?,
-            favicon_data:
-                json_data["favicon"]
-                    .as_str()
-                    .ok_or(Error::InvalidJsonRoot)?
-                    .to_string()
-                    .trim_start_matches("data:image/png;base64,")
-                    .to_string(),
-            sample_players:
-                json_data["players"]["sample"]
+        let description = if json_data["description"].is_string() || json_data["description"].is_object() {
+            Some(Chat::from_string(serde_json::to_string(&json_data["description"])?)?)
+        }
+        else { None };
+        let sample_players = if json_data["players"]["sample"].is_array() {
+            Some(json_data["players"]["sample"]
                     .as_array()
                     .ok_or(Error::InvalidJsonRoot)
                     .map(|dta| {
                         let mut final_data = vec![];
                         for pair in dta {
-                            final_data.push((pair["name"].to_string(), UUID::from_username(pair["id"].to_string()).unwrap()));
+                            final_data.push((pair["name"].to_string(), UUID::from_username(&pair["id"].to_string()).unwrap()));
                         }
 
                         final_data
-                    })?
+                    })?)
+        }
+        else { None };
+        let favicon_data = if json_data["favicon"].is_string() {
+            Some(
+                json_data["favicon"]
+                    .as_str()
+                    .ok_or(Error::InvalidJsonRoot)?
+                    .to_string()
+                    .trim_start_matches("data:image/png;base64,")
+                    .to_string()
+            )
+        }
+        else { None };
+        let max_players;
+        let online_players;
+        if json_data["players"].is_object() {
+            max_players = Some(json_data["players"]["max"].as_i64().ok_or(Error::InvalidJsonRoot)?);
+            online_players = Some(json_data["players"]["online"].as_i64().ok_or(Error::InvalidJsonRoot)?);
+        }
+        else {
+            max_players = None;
+            online_players = None;
+        }
+
+        Ok(StatusResponse {
+            version_name: json_data["version"]["name"].to_string(),
+            version_protocol: json_data["version"]["protocol"].as_i64().ok_or(Error::InvalidJsonRoot)?,
+            max_players,
+            online_players,
+            description,
+            favicon_data,
+            sample_players
         })
     }
     fn to_string(&self) -> Result<String, Error> {
@@ -80,26 +102,34 @@ impl StatusResponse {
         string_data += "\",\"protocol\":";
         string_data += &format!("{}", self.version_protocol);
         string_data += "},\"players\":{\"max\":";
-        string_data += &format!("{}", self.max_players);
-        string_data += ",\"online\":";
-        string_data += &format!("{}", self.online_players);
+        if let (Some(max_players), Some(online_players)) = (self.max_players, self.online_players) {
+            string_data += "\"max\":";
+            string_data += &format!("{}", max_players);
+            string_data += ",\"online\":";
+            string_data += &format!("{}", online_players);
+        }
         string_data += "\"sample\":[";
         let mut sample_index = false;
-        for player in self.sample_players.clone() {
-            if sample_index {
-                string_data += ",";
+        if let Some(players) = &self.sample_players {
+            for player in players {
+                if sample_index {
+                    string_data += ",";
+                }
+                string_data += "{\"name\":\"";
+                string_data += &player.0;
+                string_data += "\",\"id\":\"";
+                string_data += &format!("{:x}", player.1.to_value()?);
+                string_data += "}";
+                sample_index = true;
             }
-            string_data += "{\"name\":\"";
-            string_data += &player.0;
-            string_data += "\",\"id\":\"";
-            string_data += &format!("{:x}", player.1.to_value()?);
-            string_data += "}";
-            sample_index = true;
         }
         string_data += "]},\"description\":";
-        string_data += ",\"favicon\":\"data:image/png;base64,";
-        string_data += &self.favicon_data;
-        string_data += "\"}";
+        if let Some(favicon) = &self.favicon_data {
+            string_data += ",\"favicon\":\"data:image/png;base64,";
+            string_data += favicon;
+            string_data += "\"";
+        }
+        string_data += "}";
 
         Ok(string_data)
     }

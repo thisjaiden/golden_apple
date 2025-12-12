@@ -6,7 +6,7 @@ extern crate num_derive;
 /// The Minecraft protocol version used for communicating over the network with
 /// the `netty` module. see [wiki.vg](https://wiki.vg/Protocol_version_numbers)
 /// for more information.
-pub const PROTOCOL_VERSION: i32 = 768;
+pub const PROTOCOL_VERSION: i32 = 773;
 
 #[derive(Debug)]
 /// Represents an error that can occur while using one of the libraries functions.
@@ -111,7 +111,7 @@ impl UUID {
     }
     /// Generates a UUID from a username. This function uses Mojang's API, and may be subject to
     /// rate limiting. Cache your results.
-    pub fn from_username(username: String) -> Result<UUID, Error> {
+    pub fn from_username(username: &str) -> Result<UUID, Error> {
         use reqwest::blocking::get;
         let raw_response = get(format!("https://api.mojang.com/users/profiles/minecraft/{}", username)).unwrap().text().unwrap();
         let json_response: serde_json::Value = serde_json::from_str(&raw_response)?;
@@ -159,28 +159,33 @@ impl UUID {
     }
 }
 
+use nbt::NamedTag;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 /// Represents a chat message or other form of rich text.
 pub struct Chat {
-    component: ChatComponent
+    component: TextComponent
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize, Default)]
 #[allow(non_snake_case)]
 /// Represents one component of a Chat object.
-pub struct ChatComponent {
+pub struct TextComponent {
     /// Text to be used.
     pub text: Option<String>,
     /// Translation key to be used.
     pub translate: Option<String>,
+    /// Fields to be used with a given translation key.
+    pub with: Option<Vec<TextComponent>>,
     /// Key to use the translated keybind for.
     pub keybind: Option<String>,
     /// Scoreboard to use.
     pub score: Option<ChatScore>,
     /// Selector to use with `score`.
     pub selector: Option<String>,
+    /// TextComponent to be placed between entities found with `selector`
+    pub seperator: Option<Box<TextComponent>>,
     /// Declares if the text is bold.
     pub bold: Option<bool>,
     /// Declares if the text is italic.
@@ -196,11 +201,32 @@ pub struct ChatComponent {
     /// Declares text to insert into the client's chat when clicked.
     pub insertion: Option<String>,
     /// Defines an event when this text is clicked.
-    pub clickEvent: Option<ClickEvent>,
+    #[serde(rename = "clickEvent")]
+    pub click_event: Option<ClickEvent>,
     /// Defines an event when a client is hovering over this text.
-    pub hoverEvent: Option<HoverEvent>,
-    /// Declares extra components to add aftr this one.
-    pub extra: Option<Vec<ChatComponent>>
+    #[serde(rename = "hoverEvent")]
+    pub hover_event: Option<HoverEvent>,
+    pub nbt: Option<String>,
+    pub interpret: Option<bool>,
+    /// Declares extra components to add after this one.
+    pub extra: Option<Vec<TextComponent>>
+}
+
+impl TextComponent {
+    pub fn to_nbt(&self) -> NamedTag {
+        todo!()
+    }
+    pub fn to_json(&self) -> Result<String, Error> {
+        serde_json::to_string(self)
+            .map_err(|err| Error::JsonParsingError(err))
+    }
+    pub fn from_nbt(from: &NamedTag) -> Self {
+        todo!()
+    }
+    pub fn from_json(from: &String) -> Result<Self, Error> {
+        serde_json::from_str(from)
+            .map_err(|err| Error::JsonParsingError(err))
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
@@ -209,9 +235,7 @@ pub struct ChatScore {
     /// Name of the given scoreboard.
     pub name: String,
     /// Objective of the given scoreboard.
-    pub objective: String,
-    /// Value to assign to the given scoreboard.
-    pub value: Option<String>
+    pub objective: String
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
@@ -223,7 +247,20 @@ pub struct ClickEvent {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct HoverEvent {
     pub action: String,
-    pub value: String
+    pub contents: HoverEventContents
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub enum HoverEventContents {
+    // Boxed to prevent recursion.
+    ShowText(Box<TextComponent>),
+    ShowItem { id: String, count: i32, tag: Option<String> },
+    ShowEntity {
+        #[serde(rename = "type")]
+        type_: String,
+        id: String,
+        name: Option<String>
+    }
 }
 
 impl Chat {
@@ -244,43 +281,17 @@ impl Chat {
         }
         else if structure.is_array() {
             Ok(Chat {
-                component: ChatComponent {
-                    text: None,
-                    translate: None,
-                    keybind: None,
-                    score: None,
-                    selector: None,
-                    bold: None,
-                    italic: None,
-                    underlined: None,
-                    strikethrough: None,
-                    obfuscated: None,
-                    color: None,
-                    insertion: None,
-                    clickEvent: None,
-                    hoverEvent: None,
-                    extra: serde_json::from_str(&data)?
+                component: TextComponent {
+                    extra: serde_json::from_str(&data)?,
+                    ..Default::default()
                 }
             })
         }
         else if structure.is_string() {
             Ok(Chat {
-                component: ChatComponent {
+                component: TextComponent {
                     text: serde_json::from_str(&data)?,
-                    translate: None,
-                    keybind: None,
-                    score: None,
-                    selector: None,
-                    bold: None,
-                    italic: None,
-                    underlined: None,
-                    strikethrough: None,
-                    obfuscated: None,
-                    color: None,
-                    insertion: None,
-                    clickEvent: None,
-                    hoverEvent: None,
-                    extra: None
+                    ..Default::default()
                 }
             })
         }
@@ -449,7 +460,7 @@ impl Angle {
     }
 }
 
-/// Represents a Java Int (i32) using between 1-5 bytes.
+/// Represents a Java Int (i32) using 1-5 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarInt {
     value: i32,
@@ -597,7 +608,7 @@ impl VarInt {
 }
 
 
-/// Represents a Java Long (i64) using between 1-10 bytes.
+/// Represents a Java Long (i64) using 1-10 bytes.
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct VarLong {
     value: i64,
@@ -1283,3 +1294,6 @@ pub mod netty;
 /// Unit testing module.
 #[cfg(test)]
 mod test;
+/// More complicated netty-related tests.
+#[cfg(test)]
+mod netty_tests;

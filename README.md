@@ -1,10 +1,10 @@
 # Overview
 
-`golden_apple` is a library for decoding, encoding, and using common types found in Minecraft: Java Edition.
+`golden_apple` is a library for decoding, encoding, and using the Minecraft: Java Edition networking protocol and associated data types.
 
 ## Goals
 
-- Provide a generalized format for sharing and using Minecraft's data types
+- Provide a generalized format for sharing and using Minecraft's data types, as referenced in the networking protocol
 - Simplify the decoding and encoding of network data
 - Abstract away enums usually passed as numbers
 
@@ -52,6 +52,7 @@ There is one Cargo feature flag for this crate, `encryption`. It is not complete
 
 |  Crate version  | Minecraft version | Minecraft Protocol ID |
 | --------------- | ----------------- | --------------------- |
+| UNRELEASED      | 1.21.10           | 773                   |
 | 0.20.0          | 1.21.2 - 1.21.3   | 768                   |
 | 0.18.0 - 0.19.0 | 1.21.0 - 1.21.1   | 767                   |
 | 0.17.0 - 0.17.2 | 1.19.2            | 762                   |

@@ -1,8 +1,8 @@
 [package]
 name = "golden_apple"
-version = "0.20.0"
+version = "0.21.0"
 authors = ["thisjaiden"]
-edition = "2021"
+edition = "2024"
 keywords = ["api", "parse", "minecraft"]
 categories = ["data-structures", "encoding"]
 description = "A Rust library for decoding and sharing Minecraft data types"
@@ -15,15 +15,15 @@ license = "MIT"
 encryption = []
 
 [dependencies]
-serde = { version = "1.0.214", features = ["derive"] }
-serde_json = "1.0.132"
-reqwest = { version = "0.12.9", features = ["blocking"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+reqwest = { version = "0.12.25", features = ["blocking"] }
 num-traits = "0.2.19"
 num-derive = "0.4.2"
 cesu8 = "1.1.0"
-flate2 = "1.0.34"
-bitflags = "2.6.0"
+flate2 = "1.1.5"
+bitflags = "2.10.0"
 
 [build-dependencies]
-serde = { version = "1.0.214", features = ["derive"] }
-serde_json = "1.0.132"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
